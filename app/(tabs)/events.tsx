@@ -345,6 +345,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.snowWhite,
     marginBottom: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   infoRow: {
     flexDirection: 'row',
@@ -354,6 +357,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.snowWhite,
     fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   separator: {
     fontSize: 14,
@@ -364,12 +370,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.snowWhite,
     marginLeft: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   distance: {
     fontSize: 14,
     color: Colors.snowWhite,
     marginLeft: 4,
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   feeContainer: {
     backgroundColor: Colors.success,

@@ -224,14 +224,13 @@ export default function ToursScreen() {
                       <LinearGradient
                         colors={['transparent', 'rgba(0,0,0,0.85)']}
                         style={styles.tourImageGradient}
-                      >
-                        <View style={styles.tourHeader}>
-                          <Text style={styles.tourName}>{tour.title}</Text>
-                          <View style={[styles.badge, badgeColors[index % 6]]}>
-                            <Text style={styles.badgeText}>{tour.days}D</Text>
-                          </View>
+                      />
+                      <View style={styles.tourOverlayContent}>
+                        <Text style={styles.tourName}>{tour.title}</Text>
+                        <View style={[styles.badge, badgeColors[index % 6]]}>
+                          <Text style={styles.badgeText}>{tour.days}D</Text>
                         </View>
-                      </LinearGradient>
+                      </View>
                     </View>
                     <View style={styles.tourContent}>
                       <Text style={styles.tourDescription} numberOfLines={2}>{tour.description}</Text>
@@ -346,8 +345,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   tourImageGradient: {
-    padding: 16,
-    paddingTop: 60,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  tourOverlayContent: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   tourContent: {
     padding: 16,

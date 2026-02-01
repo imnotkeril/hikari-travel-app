@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, Dimensions, Animated, Image, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Dimensions, Animated, Image, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Star, MapPin, Bell, User, Sparkles } from 'lucide-react-native';
+import { Star, MapPin, Bell, User } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
-import { topPlaces } from '@/mocks/places';
+import { trpc } from '@/lib/trpc';
+import { useUser } from '@/contexts/UserContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH;
@@ -15,9 +16,16 @@ export default function HomeScreen() {
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
   const router = useRouter();
+  const { user } = useUser();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  const attractionsQuery = trpc.attractions.getAll.useQuery({
+    userLocation: user.location,
+  });
+
+  const topPlaces = (attractionsQuery.data || []).slice(0, 5);
 
   useEffect(() => {
     Animated.parallel([
@@ -51,6 +59,8 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    if (topPlaces.length === 0) return;
+    
     const interval = setInterval(() => {
       const nextIndex = (activeIndex + 1) % topPlaces.length;
       setActiveIndex(nextIndex);
@@ -61,11 +71,15 @@ export default function HomeScreen() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [activeIndex]);
+  }, [activeIndex, topPlaces.length]);
 
-  console.log('HomeScreen rendering, topPlaces:', topPlaces.length);
-
-
+  if (attractionsQuery.isLoading || topPlaces.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ fontSize: 18, color: Colors.snowWhite }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -242,6 +256,9 @@ const styles = StyleSheet.create({
     color: Colors.snowWhite,
     flex: 1,
     marginRight: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -261,6 +278,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: Colors.snowWhite,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   categoryBadge: {
     backgroundColor: 'rgba(255, 80, 122, 0.3)',
@@ -272,6 +292,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.snowWhite,
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   locationBadge: {
     flexDirection: 'row',
@@ -286,6 +309,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.snowWhite,
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   pagination: {
     position: 'absolute',
