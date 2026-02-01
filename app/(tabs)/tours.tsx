@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Animated, ImageBackground, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert, Animated, RefreshControl } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, MapPin, Wallet, Clock, Trash2, Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -139,29 +140,31 @@ export default function ToursScreen() {
                         router.push({ pathname: '/tour/[id]' as any, params: { id: tour.id } });
                       }}
                     >
-                      <ImageBackground 
+                    <View style={styles.tourImageContainer}>
+                      <Image 
                         source={{ uri: tour.image || 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80' }}
                         style={styles.tourImage}
-                        imageStyle={{ borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                      <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.8)']}
+                        style={styles.tourImageGradient}
                       >
-                        <LinearGradient
-                          colors={['transparent', 'rgba(0,0,0,0.8)']}
-                          style={styles.tourImageGradient}
-                        >
-                          <View style={styles.tourHeader}>
-                            <Text style={styles.tourName}>{tour.title}</Text>
-                            <TouchableOpacity 
-                              style={styles.deleteButton}
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTour(tour.id, tour.title);
-                              }}
-                            >
-                              <Trash2 size={18} color={Colors.error} />
-                            </TouchableOpacity>
-                          </View>
-                        </LinearGradient>
-                      </ImageBackground>
+                        <View style={styles.tourHeader}>
+                          <Text style={styles.tourName}>{tour.title}</Text>
+                          <TouchableOpacity 
+                            style={styles.deleteButton}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTour(tour.id, tour.title);
+                            }}
+                          >
+                            <Trash2 size={18} color={Colors.error} />
+                          </TouchableOpacity>
+                        </View>
+                      </LinearGradient>
+                    </View>
                       <View style={styles.tourContent}>
                         <View style={styles.tourDetail}>
                           <MapPin size={16} color={Colors.fujiBlue} />
@@ -211,11 +214,13 @@ export default function ToursScreen() {
                       router.push({ pathname: '/tour/[id]' as any, params: { id: tour.id } });
                     }}
                   >
-                    <ImageBackground 
-                      source={{ uri: tour.image }}
-                      style={styles.tourImage}
-                      imageStyle={{ borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
-                    >
+                    <View style={styles.tourImageContainer}>
+                      <Image 
+                        source={{ uri: tour.image || '' }}
+                        style={styles.tourImage}
+                        contentFit="cover"
+                        transition={200}
+                      />
                       <LinearGradient
                         colors={['transparent', 'rgba(0,0,0,0.85)']}
                         style={styles.tourImageGradient}
@@ -227,7 +232,7 @@ export default function ToursScreen() {
                           </View>
                         </View>
                       </LinearGradient>
-                    </ImageBackground>
+                    </View>
                     <View style={styles.tourContent}>
                       <Text style={styles.tourDescription} numberOfLines={2}>{tour.description}</Text>
                       <View style={styles.tourStats}>
@@ -330,10 +335,15 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  tourImage: {
+  tourImageContainer: {
     width: '100%',
     height: 180,
-    justifyContent: 'flex-end',
+    position: 'relative',
+  },
+  tourImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
   },
   tourImageGradient: {
     padding: 16,

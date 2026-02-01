@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, MapPin, Star, Map, Plus, Train } from 'lucide-react-native';
@@ -22,11 +23,11 @@ export default function PlaceDetailScreen() {
 
   const attractionQuery = trpc.attractions.getById.useQuery(
     { id: id as string },
-    { enabled: false }
+    { enabled: !!id }
   );
   const cafeQuery = trpc.cafes.getById.useQuery(
     { id: id as string },
-    { enabled: false }
+    { enabled: !!id && !attractionQuery.data && !attractionQuery.isLoading }
   );
 
   const nearbyAttractionsQuery = trpc.attractions.getAll.useQuery({
@@ -35,14 +36,6 @@ export default function PlaceDetailScreen() {
   const nearbyCafesQuery = trpc.cafes.getAll.useQuery({
     userLocation: user.location,
   });
-
-  React.useEffect(() => {
-    attractionQuery.refetch().then(result => {
-      if (!result.data) {
-        cafeQuery.refetch();
-      }
-    });
-  }, [id]);
 
   const place = attractionQuery.data || cafeQuery.data;
   
@@ -111,9 +104,19 @@ export default function PlaceDetailScreen() {
             }}
             scrollEventThrottle={16}
           >
-            {place.images.map((image, index) => (
-              <Image key={index} source={{ uri: image }} style={styles.headerImage} />
-            ))}
+            {place.images && place.images.length > 0 ? (
+              place.images.map((image, index) => (
+                <Image 
+                  key={index} 
+                  source={{ uri: image }} 
+                  style={styles.headerImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ))
+            ) : (
+              <View style={[styles.headerImage, { backgroundColor: Colors.surface }]} />
+            )}
           </ScrollView>
           <LinearGradient
             colors={['rgba(0,0,0,0.5)', 'transparent', 'rgba(0,0,0,0.7)']}
@@ -257,7 +260,12 @@ export default function PlaceDetailScreen() {
                     style={styles.nearbyCard}
                     onPress={() => router.push({ pathname: '/place/[id]', params: { id: nearbyPlace.id } })}
                   >
-                    <Image source={{ uri: nearbyPlace.images[0] }} style={styles.nearbyImage} />
+                    <Image 
+                      source={{ uri: nearbyPlace.images?.[0] || '' }} 
+                      style={styles.nearbyImage}
+                      contentFit="cover"
+                      transition={200}
+                    />
                     <Text style={styles.nearbyName} numberOfLines={1}>{nearbyPlace.name}</Text>
                     <View style={styles.nearbyInfo}>
                       <View style={styles.nearbyRating}>
@@ -313,7 +321,6 @@ const styles = StyleSheet.create({
   headerImage: {
     width: SCREEN_WIDTH,
     height: 350,
-    resizeMode: 'cover',
   },
   imageGradient: {
     position: 'absolute',
