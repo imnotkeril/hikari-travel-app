@@ -11,7 +11,7 @@ const attractions: Place[] = [
     ward: 'Asakusa',
     address: '2 Chome-3-1 Asakusa, Taito',
     coordinates: { lat: 35.7148, lng: 139.7967 },
-    images: ['https://imgur.com/a/fhGRKUt'],
+    images: ['https://postimg.cc/QVDPp9js'],
     description: "Senso-ji is Tokyo's oldest temple, founded in 628 AD. This ancient Buddhist temple is dedicated to Kannon, the Goddess of Mercy. The temple's magnificent architecture and rich history make it one of Tokyo's most visited sites.",
     openingHours: '6:00 AM - 5:00 PM',
     admissionFee: 0,
