@@ -5,28 +5,54 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, MapPin, Star, Map, Plus, Train } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
-import { attractions, restaurants, cafes } from '@/mocks/places';
 import { useTourCreation } from '@/contexts/TourCreationContext';
 import { calculateDistance } from '@/backend/services/distance-calculator';
+import { trpc } from '@/lib/trpc';
+import { useUser } from '@/contexts/UserContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const allPlaces = [...attractions, ...restaurants, ...cafes];
 
 export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { user } = useUser();
   const { selectionMode, selectedPlaces, togglePlaceSelection } = useTourCreation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
-  const place = allPlaces.find(p => p.id === id);
+
+  const attractionQuery = trpc.attractions.getById.useQuery(
+    { id: id as string },
+    { enabled: false }
+  );
+  const cafeQuery = trpc.cafes.getById.useQuery(
+    { id: id as string },
+    { enabled: false }
+  );
+
+  React.useEffect(() => {
+    attractionQuery.refetch().then(result => {
+      if (!result.data) {
+        cafeQuery.refetch();
+      }
+    });
+  }, [id]);
+
+  const place = attractionQuery.data || cafeQuery.data;
   
   const isSelected = selectedPlaces.includes(id as string);
 
+  if (attractionQuery.isLoading || cafeQuery.isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: Colors.textSecondary }}>Loading...</Text>
+      </View>
+    );
+  }
+
   if (!place) {
     return (
-      <View style={styles.container}>
-        <Text>Place not found</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: Colors.textSecondary }}>Place not found</Text>
       </View>
     );
   }
@@ -39,7 +65,19 @@ export default function PlaceDetailScreen() {
     }
   };
 
+  const nearbyAttractionsQuery = trpc.attractions.getAll.useQuery({
+    userLocation: user.location,
+  });
+  const nearbyCafesQuery = trpc.cafes.getAll.useQuery({
+    userLocation: user.location,
+  });
+
   const nearbyPlaces = useMemo(() => {
+    const allPlaces = [
+      ...(nearbyAttractionsQuery.data || []),
+      ...(nearbyCafesQuery.data || []),
+    ];
+    
     const placesWithDistance = allPlaces
       .filter(p => p.id !== id && p.ward === place.ward)
       .map(p => {
@@ -53,7 +91,7 @@ export default function PlaceDetailScreen() {
       .slice(0, 3);
     
     return placesWithDistance;
-  }, [id, place.coordinates, place.ward]);
+  }, [id, place.coordinates, place.ward, nearbyAttractionsQuery.data, nearbyCafesQuery.data]);
 
   return (
     <View style={styles.container}>
