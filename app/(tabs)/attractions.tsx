@@ -401,6 +401,10 @@ const styles = StyleSheet.create({
     height: '60%',
   },
   cardContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
