@@ -29,6 +29,13 @@ export default function PlaceDetailScreen() {
     { enabled: false }
   );
 
+  const nearbyAttractionsQuery = trpc.attractions.getAll.useQuery({
+    userLocation: user.location,
+  });
+  const nearbyCafesQuery = trpc.cafes.getAll.useQuery({
+    userLocation: user.location,
+  });
+
   React.useEffect(() => {
     attractionQuery.refetch().then(result => {
       if (!result.data) {
@@ -40,6 +47,29 @@ export default function PlaceDetailScreen() {
   const place = attractionQuery.data || cafeQuery.data;
   
   const isSelected = selectedPlaces.includes(id as string);
+
+  const nearbyPlaces = useMemo(() => {
+    if (!place) return [];
+    
+    const allPlaces = [
+      ...(nearbyAttractionsQuery.data || []),
+      ...(nearbyCafesQuery.data || []),
+    ];
+    
+    const placesWithDistance = allPlaces
+      .filter(p => p.id !== id && p.ward === place.ward)
+      .map(p => {
+        const distanceInfo = calculateDistance(place.coordinates, p.coordinates);
+        return {
+          ...p,
+          distanceKm: distanceInfo.distance,
+        };
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 3);
+    
+    return placesWithDistance;
+  }, [id, place, nearbyAttractionsQuery.data, nearbyCafesQuery.data]);
 
   if (attractionQuery.isLoading || cafeQuery.isLoading) {
     return (
@@ -64,34 +94,6 @@ export default function PlaceDetailScreen() {
       Alert.alert('Add to Tour', 'Start creating a tour first to add places');
     }
   };
-
-  const nearbyAttractionsQuery = trpc.attractions.getAll.useQuery({
-    userLocation: user.location,
-  });
-  const nearbyCafesQuery = trpc.cafes.getAll.useQuery({
-    userLocation: user.location,
-  });
-
-  const nearbyPlaces = useMemo(() => {
-    const allPlaces = [
-      ...(nearbyAttractionsQuery.data || []),
-      ...(nearbyCafesQuery.data || []),
-    ];
-    
-    const placesWithDistance = allPlaces
-      .filter(p => p.id !== id && p.ward === place.ward)
-      .map(p => {
-        const distanceInfo = calculateDistance(place.coordinates, p.coordinates);
-        return {
-          ...p,
-          distanceKm: distanceInfo.distance,
-        };
-      })
-      .sort((a, b) => a.distanceKm - b.distanceKm)
-      .slice(0, 3);
-    
-    return placesWithDistance;
-  }, [id, place.coordinates, place.ward, nearbyAttractionsQuery.data, nearbyCafesQuery.data]);
 
   return (
     <View style={styles.container}>
