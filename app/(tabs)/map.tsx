@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Linking, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Navigation, Route, X, MapPinned, Coffee } from 'lucide-react-native';
+import { Navigation, Route, X, MapPinned, Coffee, Star, ExternalLink } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Colors from '@/constants/colors';
 import { attractions, restaurants, cafes } from '@/mocks/places';
 import { useTourCreation } from '@/contexts/TourCreationContext';
@@ -13,7 +14,9 @@ export default function MapScreen() {
   const [showAttractions, setShowAttractions] = useState(true);
   const [showRestaurants, setShowRestaurants] = useState(true);
   const [showTourRoute, setShowTourRoute] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
   const router = useRouter();
+  const params = useLocalSearchParams();
   const mapRef = useRef<MapView>(null);
   const { getActiveTour } = useTourCreation();
   
@@ -36,6 +39,36 @@ export default function MapScreen() {
       setShowTourRoute(true);
     }
   }, [activeTour]);
+
+  useEffect(() => {
+    if (params.selectedPlaceId) {
+      const allPlaces = [...attractions, ...restaurants, ...cafes];
+      const place = allPlaces.find(p => p.id === params.selectedPlaceId);
+      if (place && mapRef.current) {
+        setSelectedPlace(place);
+        mapRef.current.animateToRegion({
+          latitude: place.coordinates.lat,
+          longitude: place.coordinates.lng,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        }, 1000);
+      }
+    }
+  }, [params.selectedPlaceId]);
+
+  const handleOpenGoogleMaps = () => {
+    if (!selectedPlace) return;
+    
+    const { lat, lng } = selectedPlace.coordinates;
+    const label = encodeURIComponent(selectedPlace.name);
+    const url = Platform.select({
+      ios: `maps:0,0?q=${label}@${lat},${lng}`,
+      android: `geo:0,0?q=${lat},${lng}(${label})`,
+      default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    });
+    
+    Linking.openURL(url);
+  };
 
   return (
     <View style={styles.container}>
@@ -93,10 +126,8 @@ export default function MapScreen() {
               }}
               title={place.name}
               description={place.category}
-              pinColor={Colors.fujiBlue}
-              onCalloutPress={() =>
-                router.push({ pathname: '/place/[id]', params: { id: place.id } })
-              }
+              pinColor={selectedPlace?.id === place.id ? '#FFD700' : Colors.fujiBlue}
+              onPress={() => setSelectedPlace(place)}
             />
           ))}
         {showRestaurants &&
@@ -111,10 +142,8 @@ export default function MapScreen() {
               }}
               title={place.name}
               description={place.category}
-              pinColor={Colors.sakuraPink}
-              onCalloutPress={() =>
-                router.push({ pathname: '/place/[id]', params: { id: place.id } })
-              }
+              pinColor={selectedPlace?.id === place.id ? '#FFD700' : Colors.sakuraPink}
+              onPress={() => setSelectedPlace(place)}
             />
           ))}
       </MapView>
@@ -206,6 +235,44 @@ export default function MapScreen() {
                 );
               })}
             </ScrollView>
+          </View>
+        )}
+
+        {selectedPlace && (
+          <View style={styles.selectedPlaceCard}>
+            <TouchableOpacity 
+              style={styles.closeCardButton}
+              onPress={() => setSelectedPlace(null)}
+            >
+              <X size={20} color={Colors.textPrimary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.cardContent}
+              onPress={() => router.push({ pathname: '/place/[id]', params: { id: selectedPlace.id } })}
+            >
+              <Image 
+                source={{ uri: selectedPlace.images?.[0] || '' }} 
+                style={styles.selectedPlaceImage}
+                contentFit="cover"
+              />
+              <View style={styles.selectedPlaceInfo}>
+                <Text style={styles.selectedPlaceName} numberOfLines={2}>{selectedPlace.name}</Text>
+                <View style={styles.selectedPlaceRating}>
+                  <Star size={14} color={Colors.warning} fill={Colors.warning} />
+                  <Text style={styles.selectedPlaceRatingText}>{selectedPlace.rating}</Text>
+                  <Text style={styles.selectedPlaceCategory}>• {selectedPlace.category}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.directionsButton}
+              onPress={handleOpenGoogleMaps}
+            >
+              <ExternalLink size={16} color={Colors.snowWhite} />
+              <Text style={styles.directionsButtonText}>Directions</Text>
+            </TouchableOpacity>
           </View>
         )}
       </SafeAreaView>
@@ -373,5 +440,84 @@ const styles = StyleSheet.create({
   routeCardTime: {
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  selectedPlaceCard: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  closeCardButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  selectedPlaceImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    marginRight: 12,
+  },
+  selectedPlaceInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  selectedPlaceName: {
+    fontSize: 18,
+    fontWeight: 'bold' as const,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  selectedPlaceRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  selectedPlaceRatingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  selectedPlaceCategory: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.sakuraPink,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  directionsButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.snowWhite,
   },
 });

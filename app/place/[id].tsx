@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -80,12 +80,22 @@ export default function PlaceDetailScreen() {
     );
   }
 
-  const handleAddToTour = () => {
-    if (selectionMode) {
-      togglePlaceSelection(id as string);
-    } else {
-      Alert.alert('Add to Tour', 'Start creating a tour first to add places');
-    }
+  const handleOpenMap = () => {
+    router.push({ pathname: '/(tabs)/map', params: { selectedPlaceId: id } });
+  };
+
+  const handleOpenGoogleMaps = () => {
+    if (!place || !place.coordinates) return;
+    
+    const { lat, lng } = place.coordinates;
+    const label = encodeURIComponent(place.name);
+    const url = Platform.select({
+      ios: `maps:0,0?q=${label}@${lat},${lng}`,
+      android: `geo:0,0?q=${lat},${lng}(${label})`,
+      default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    });
+    
+    Linking.openURL(url);
   };
 
   return (
@@ -289,16 +299,12 @@ export default function PlaceDetailScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerButton}>
-          <Map size={20} color={Colors.snowWhite} />
-          <Text style={styles.footerButtonText}>Map</Text>
-        </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.footerButton, styles.footerButtonPrimary, isSelected && styles.footerButtonSelected]}
-          onPress={handleAddToTour}
+          style={styles.footerButton}
+          onPress={handleOpenMap}
         >
-          <Plus size={20} color={Colors.snowWhite} />
-          <Text style={styles.footerButtonText}>{isSelected ? 'Added' : 'Add to Tour'}</Text>
+          <Map size={20} color={Colors.snowWhite} />
+          <Text style={styles.footerButtonText}>View on Map</Text>
         </TouchableOpacity>
       </View>
     </View>

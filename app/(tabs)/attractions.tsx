@@ -20,30 +20,9 @@ export default function AttractionsScreen() {
   const router = useRouter();
   const { user } = useUser();
   const { selectionMode, selectedPlaces, togglePlaceSelection, createTour } = useTourCreation();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-
   const attractionsQuery = trpc.attractions.getAll.useQuery({
     userLocation: user.location,
   });
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 30,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    return () => {};
-  }, [fadeAnim, slideAnim]);
 
   const attractionsRaw = attractionsQuery.data || [];
 
@@ -196,22 +175,9 @@ export default function AttractionsScreen() {
             </View>
           ) : filteredAttractions
             .map((place, index) => (
-              <Animated.View
+              <View
                 key={place.id}
-                style={[
-                  styles.cardWrapper,
-                  {
-                    opacity: fadeAnim,
-                    transform: [
-                      {
-                        translateY: slideAnim.interpolate({
-                          inputRange: [0, 50],
-                          outputRange: [0, 50],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
+                style={styles.cardWrapper}
               >
                 <TouchableOpacity 
                   style={styles.card} 
@@ -272,7 +238,7 @@ export default function AttractionsScreen() {
                   </View>
                 </View>
               </TouchableOpacity>
-            </Animated.View>
+            </View>
             ))}
           <View style={styles.bottomPadding} />
         </ScrollView>
