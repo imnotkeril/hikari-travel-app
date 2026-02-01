@@ -5,17 +5,26 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, MapPin, Calendar, Clock, DollarSign, Map, Navigation } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
-import { events } from '@/mocks/events';
+import { trpc } from '@/lib/trpc';
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const event = events.find(e => e.id === id);
+  const eventQuery = trpc.events.getById.useQuery({ id: id as string });
+  const event = eventQuery.data;
+
+  if (eventQuery.isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: Colors.textSecondary }}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!event) {
     return (
-      <View style={styles.container}>
-        <Text>Event not found</Text>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: Colors.textSecondary }}>Event not found</Text>
       </View>
     );
   }
