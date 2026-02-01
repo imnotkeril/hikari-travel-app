@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, ImageBackground, Animated, RefreshControl } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Animated, RefreshControl } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, SlidersHorizontal, Star, MapPin } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -189,11 +190,13 @@ export default function CafeScreen() {
                     router.push({ pathname: '/place/[id]', params: { id: place.id } });
                   }}
                 >
-                <ImageBackground 
-                  source={{ uri: place.images[0] }} 
-                  style={styles.cardImage}
-                  imageStyle={{ borderRadius: 10 }}
-                >
+                <View style={styles.cardImageContainer}>
+                  <Image 
+                    source={{ uri: place.images?.[0] || '' }} 
+                    style={styles.cardImage}
+                    contentFit="cover"
+                    transition={200}
+                  />
                   <LinearGradient
                     colors={['transparent', 'rgba(0,0,0,0.8)']}
                     style={styles.cardGradient}
@@ -227,7 +230,7 @@ export default function CafeScreen() {
                       )}
                     </View>
                   </View>
-                </ImageBackground>
+                </View>
               </TouchableOpacity>
             </Animated.View>
             ))}
@@ -306,10 +309,15 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 5,
   },
-  cardImage: {
+  cardImageContainer: {
     width: '100%',
     height: 200,
-    justifyContent: 'flex-end',
+    position: 'relative',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
   },
   cardGradient: {
     position: 'absolute',
