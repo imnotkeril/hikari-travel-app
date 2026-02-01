@@ -108,7 +108,7 @@ export default function AttractionsScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#FFE5EC', '#F0F4FF', '#E8F5F7']}
+        colors={['#FFD1DC', '#E8F0FF', '#D4EEF0']}
         style={StyleSheet.absoluteFill}
       />
       
