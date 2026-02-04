@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Sparkles, ListChecks, Send } from 'lucide-react-native';
+import { X, Sparkles, ListChecks, Send, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useTourCreation } from '@/contexts/TourCreationContext';
+import { useRorkAgent, createRorkTool } from '@rork-ai/toolkit-sdk';
+import { z } from 'zod';
+import { trpc } from '@/lib/trpc';
+import { useUser } from '@/contexts/UserContext';
+import { useRouter } from 'expo-router';
 
 interface CreateTourModalProps {
   visible: boolean;
@@ -15,25 +20,116 @@ interface CreateTourModalProps {
 export default function CreateTourModal({ visible, onClose, onEnableSelectionMode }: CreateTourModalProps) {
   const [mode, setMode] = useState<'select' | 'ai' | 'naming' | null>(null);
   const [tourNameInput, setTourNameInput] = useState('');
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([
-    { role: 'ai', text: 'Hi! I\'ll help you create the perfect Tokyo tour. What are you interested in? (temples, sushi, modern architecture, etc.)' }
-  ]);
   const [inputText, setInputText] = useState('');
   const { enableSelectionMode } = useTourCreation();
+  const { user } = useUser();
+  const router = useRouter();
+  const utils = trpc.useUtils();
+  
+  const attractionsQuery = trpc.attractions.getAll.useQuery();
+  const cafesQuery = trpc.cafes.getAll.useQuery();
+  const eventsQuery = trpc.events.getAll.useQuery();
+  
+  const generateTourMutation = trpc.tours.generateTour.useMutation({
+    onSuccess: (data) => {
+      console.log('AI Tour generated:', data);
+      utils.tours.getUserTours.invalidate();
+      setMode(null);
+      setInputText('');
+      onClose();
+      router.push({ pathname: '/tour/[id]', params: { id: data.id } });
+    },
+    onError: (error) => {
+      console.error('Failed to generate tour:', error);
+    },
+  });
+  
+  const { messages, sendMessage, setMessages } = useRorkAgent({
+    tools: {
+      searchPlaces: createRorkTool({
+        description: 'Search for places (attractions, cafes) in Tokyo by category, type, or keyword. Use this when user mentions specific interests.',
+        zodSchema: z.object({
+          query: z.string().describe('Search query or category (e.g., temples, sushi restaurants, modern architecture)'),
+        }),
+        execute: async (input) => {
+          const allPlaces = [
+            ...(attractionsQuery.data || []).map(p => ({ ...p, type: 'attraction' })),
+            ...(cafesQuery.data || []).map(p => ({ ...p, type: 'cafe' })),
+          ];
+          
+          const filtered = allPlaces.filter(place => 
+            place.name.toLowerCase().includes(input.query.toLowerCase()) ||
+            place.category?.toLowerCase().includes(input.query.toLowerCase()) ||
+            place.description?.toLowerCase().includes(input.query.toLowerCase())
+          ).slice(0, 8);
+          
+          return {
+            places: filtered.map(p => ({
+              id: p.id,
+              name: p.name,
+              category: p.category,
+              description: p.description,
+            })),
+          };
+        },
+      }),
+      createTour: createRorkTool({
+        description: 'Create a tour with selected place IDs and tour title. Call this when user confirms their tour choices.',
+        zodSchema: z.object({
+          title: z.string().describe('Tour title'),
+          placeIds: z.array(z.string()).describe('Array of place IDs to include in tour'),
+        }),
+        execute: async (input) => {
+          if (!user.location) {
+            return { error: 'User location not available' };
+          }
+          
+          const startDate = new Date();
+          startDate.setDate(startDate.getDate() + 1);
+          
+          generateTourMutation.mutate({
+            userId: user.id,
+            title: input.title,
+            placeIds: input.placeIds,
+            userLocation: user.location,
+            startDate: startDate.toISOString(),
+          });
+          
+          return { success: true, message: 'Creating your tour...' };
+        },
+      }),
+    },
+    initialMessages: [
+      {
+        role: 'assistant',
+        parts: [{
+          type: 'text' as const,
+          text: 'Hi! I\'ll help you create the perfect Tokyo tour. What are you interested in? (temples, sushi restaurants, modern architecture, shopping, parks, etc.)',
+        }],
+      },
+    ],
+  });
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputText.trim()) return;
-    
-    setMessages([...messages, { role: 'user', text: inputText }]);
+    const text = inputText;
     setInputText('');
-    
-    setTimeout(() => {
-      setMessages(prev => [...prev, { 
-        role: 'ai', 
-        text: 'Great! How many days will you be in Tokyo?' 
-      }]);
-    }, 1000);
+    await sendMessage(text);
   };
+  
+  useEffect(() => {
+    if (!visible) {
+      setMessages([
+        {
+          role: 'assistant',
+          parts: [{
+            type: 'text' as const,
+            text: 'Hi! I\'ll help you create the perfect Tokyo tour. What are you interested in? (temples, sushi restaurants, modern architecture, shopping, parks, etc.)',
+          }],
+        },
+      ]);
+    }
+  }, [visible]);
 
   const handleManualCreate = () => {
     setMode('naming');
@@ -59,7 +155,6 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
       setMode(null);
       setTourNameInput('');
       setInputText('');
-      setMessages([{ role: 'ai', text: 'Hi! I\'ll help you create the perfect Tokyo tour. What are you interested in? (temples, sushi, modern architecture, etc.)' }]);
       onClose();
     }
   };
@@ -153,20 +248,69 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
                 contentContainerStyle={styles.messagesContent}
                 showsVerticalScrollIndicator={false}
               >
-                {messages.map((msg, index) => (
-                  <View 
-                    key={index} 
-                    style={[
-                      styles.messageBubble,
-                      msg.role === 'user' ? styles.userBubble : styles.aiBubble
-                    ]}
-                  >
-                    <Text style={[
-                      styles.messageText,
-                      msg.role === 'user' ? styles.userText : styles.aiText
-                    ]}>
-                      {msg.text}
-                    </Text>
+                {messages.map((msg) => (
+                  <View key={msg.id} style={{ marginVertical: 6 }}>
+                    {msg.parts.map((part, i) => {
+                      if (part.type === 'text') {
+                        return (
+                          <View
+                            key={`${msg.id}-${i}`}
+                            style={[
+                              styles.messageBubble,
+                              msg.role === 'user' ? styles.userBubble : styles.aiBubble
+                            ]}
+                          >
+                            <Text style={[
+                              styles.messageText,
+                              msg.role === 'user' ? styles.userText : styles.aiText
+                            ]}>
+                              {part.text}
+                            </Text>
+                          </View>
+                        );
+                      }
+                      
+                      if (part.type === 'tool') {
+                        switch (part.state) {
+                          case 'input-streaming':
+                          case 'input-available':
+                            return (
+                              <View key={`${msg.id}-${i}`} style={styles.toolBubble}>
+                                <ActivityIndicator size="small" color={Colors.sakuraPink} />
+                                <Text style={styles.toolText}>
+                                  {part.toolName === 'searchPlaces' ? 'Searching places...' : 'Creating tour...'}
+                                </Text>
+                              </View>
+                            );
+                          
+                          case 'output-available':
+                            if (part.toolName === 'searchPlaces' && part.output?.places) {
+                              return (
+                                <View key={`${msg.id}-${i}`} style={styles.placesContainer}>
+                                  {part.output.places.map((place: any) => (
+                                    <View key={place.id} style={styles.placeCard}>
+                                      <MapPin size={16} color={Colors.sakuraPink} />
+                                      <View style={styles.placeInfo}>
+                                        <Text style={styles.placeName}>{place.name}</Text>
+                                        <Text style={styles.placeCategory} numberOfLines={1}>{place.category}</Text>
+                                      </View>
+                                    </View>
+                                  ))}
+                                </View>
+                              );
+                            }
+                            return null;
+                          
+                          case 'output-error':
+                            return (
+                              <View key={`${msg.id}-${i}`} style={styles.errorBubble}>
+                                <Text style={styles.errorText}>Error: {part.errorText}</Text>
+                              </View>
+                            );
+                        }
+                      }
+                      return null;
+                    })}
                   </View>
                 ))}
               </ScrollView>
@@ -376,5 +520,52 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: Colors.snowWhite,
+  },
+  toolBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  toolText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  placesContainer: {
+    gap: 8,
+    marginTop: 4,
+  },
+  placeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+  },
+  placeInfo: {
+    flex: 1,
+  },
+  placeName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  placeCategory: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  errorBubble: {
+    backgroundColor: '#FFEBEE',
+    padding: 12,
+    borderRadius: 10,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#C62828',
   },
 });
