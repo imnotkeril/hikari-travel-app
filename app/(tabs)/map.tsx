@@ -255,7 +255,7 @@ export default function MapScreen() {
         )}
 
         {selectedPlace && (
-          <View style={[styles.selectedPlaceCard, { bottom: 20 + insets.bottom }]}>
+          <View style={[styles.selectedPlaceCard, { bottom: 90 + insets.bottom }]}>
             <TouchableOpacity 
               style={styles.closeCardButton}
               onPress={() => setSelectedPlace(null)}
@@ -263,12 +263,20 @@ export default function MapScreen() {
               <X size={20} color={Colors.textPrimary} />
             </TouchableOpacity>
             
+            <TouchableOpacity 
+              style={styles.directionsIconButton}
+              activeOpacity={0.8}
+              onPress={handleOpenGoogleMaps}
+            >
+              <MapPin size={20} color={Colors.snowWhite} />
+            </TouchableOpacity>
+            
             <TouchableOpacity
               style={styles.cardContent}
               onPress={() => router.push({ pathname: '/place/[id]', params: { id: selectedPlace.id } })}
             >
               <Image 
-                source={{ uri: selectedPlace.images?.[0] || '' }} 
+                source={{ uri: selectedPlace.image || selectedPlace.images?.[0] || '' }} 
                 style={styles.selectedPlaceImage}
                 contentFit="cover"
               />
@@ -280,15 +288,6 @@ export default function MapScreen() {
                   <Text style={styles.selectedPlaceCategory}>• {selectedPlace.category}</Text>
                 </View>
               </View>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.directionsButton}
-              activeOpacity={0.8}
-              onPress={handleOpenGoogleMaps}
-            >
-              <MapPin size={18} color={Colors.snowWhite} />
-              <Text style={styles.directionsButtonText}>Проложить маршрут</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -487,9 +486,25 @@ const styles = StyleSheet.create({
     elevation: 3,
     zIndex: 10,
   },
+  directionsIconButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.sakuraPink,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.sakuraPink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 10,
+  },
   cardContent: {
     flexDirection: 'row',
-    marginBottom: 12,
   },
   selectedPlaceImage: {
     width: 100,
@@ -520,24 +535,5 @@ const styles = StyleSheet.create({
   selectedPlaceCategory: {
     fontSize: 14,
     color: Colors.textSecondary,
-  },
-  directionsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.sakuraPink,
-    paddingVertical: 16,
-    borderRadius: 14,
-    gap: 8,
-    shadowColor: Colors.sakuraPink,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  directionsButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.snowWhite,
   },
 });
