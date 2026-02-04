@@ -64,9 +64,9 @@ export default function MapScreen() {
     const { lat, lng } = selectedPlace.coordinates;
     const label = encodeURIComponent(selectedPlace.name);
     const url = Platform.select({
-      ios: `maps:0,0?q=${label}@${lat},${lng}`,
-      android: `geo:0,0?q=${lat},${lng}(${label})`,
-      default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+      ios: `maps://?daddr=${lat},${lng}&dirflg=w`,
+      android: `google.navigation:q=${lat},${lng}&mode=w`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`,
     });
     
     Linking.openURL(url);
