@@ -139,7 +139,7 @@ export default function MapScreen() {
             />
           ))}
         {showRestaurants &&
-          [...restaurants, ...cafes]
+          cafes
           .filter(place => !tourPlaces.find(tp => tp.id === place.id))
           .map((place) => (
             <Marker
