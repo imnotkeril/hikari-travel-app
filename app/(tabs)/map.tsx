@@ -46,15 +46,17 @@ export default function MapScreen() {
       const place = allPlaces.find(p => p.id === params.selectedPlaceId);
       if (place && mapRef.current) {
         setSelectedPlace(place);
-        mapRef.current.animateToRegion({
-          latitude: place.coordinates.lat,
-          longitude: place.coordinates.lng,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        }, 1000);
+        setTimeout(() => {
+          mapRef.current?.animateToRegion({
+            latitude: place.coordinates.lat,
+            longitude: place.coordinates.lng,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          }, 1000);
+        }, 100);
       }
     }
-  }, [params.selectedPlaceId]);
+  }, [params.selectedPlaceId, attractions, restaurants, cafes]);
 
   const handleOpenGoogleMaps = () => {
     if (!selectedPlace) return;
@@ -179,7 +181,20 @@ export default function MapScreen() {
               />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.locationButton} activeOpacity={0.8}>
+            <TouchableOpacity 
+              style={styles.locationButton} 
+              activeOpacity={0.8}
+              onPress={() => {
+                if (mapRef.current) {
+                  mapRef.current.animateToRegion({
+                    latitude: 35.6762,
+                    longitude: 139.6503,
+                    latitudeDelta: 0.1,
+                    longitudeDelta: 0.1,
+                  }, 1000);
+                }
+              }}
+            >
               <Navigation size={20} color={Colors.snowWhite} />
             </TouchableOpacity>
           </View>

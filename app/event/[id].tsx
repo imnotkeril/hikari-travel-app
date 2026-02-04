@@ -13,6 +13,10 @@ export default function EventDetailScreen() {
   const eventQuery = trpc.events.getById.useQuery({ id: id as string });
   const event = eventQuery.data;
 
+  const handleOpenMap = () => {
+    router.push({ pathname: '/(tabs)/map', params: { selectedPlaceId: id } });
+  };
+
   if (eventQuery.isLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -125,13 +129,12 @@ export default function EventDetailScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.footerButton}>
+        <TouchableOpacity 
+          style={[styles.footerButton, styles.footerButtonPrimary]}
+          onPress={handleOpenMap}
+        >
           <Map size={20} color={Colors.snowWhite} />
-          <Text style={styles.footerButtonText}>Show on Map</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.footerButton, styles.footerButtonPrimary]}>
-          <Navigation size={20} color={Colors.snowWhite} />
-          <Text style={styles.footerButtonText}>Directions</Text>
+          <Text style={styles.footerButtonText}>View on Map</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -176,9 +179,10 @@ const styles = StyleSheet.create({
   backButton: {
     width: 44,
     height: 44,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   content: {
     backgroundColor: Colors.background,
@@ -204,6 +208,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    borderRadius: 6,
     gap: 4,
   },
   tagText: {
@@ -250,20 +255,18 @@ const styles = StyleSheet.create({
     height: 100,
   },
   footer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
+    padding: 12,
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   footerButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
     backgroundColor: Colors.textSecondary,
+    borderRadius: 12,
     gap: 8,
   },
   footerButtonPrimary: {
