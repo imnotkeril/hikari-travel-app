@@ -5,8 +5,6 @@ import { X, Sparkles, ListChecks, Send, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { useChat } from 'ai/react';
-import { z } from 'zod';
 import { trpc } from '@/lib/trpc';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
@@ -28,7 +26,6 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
   
   const attractionsQuery = trpc.attractions.getAll.useQuery();
   const cafesQuery = trpc.cafes.getAll.useQuery();
-  const eventsQuery = trpc.events.getAll.useQuery();
   
   const generateTourMutation = trpc.tours.generateTour.useMutation({
     onSuccess: (data) => {
@@ -44,68 +41,140 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
     },
   });
   
-  const { messages, append, setMessages, isLoading } = useChat({
-    api: process.env.EXPO_PUBLIC_RORK_API_BASE_URL + '/api/chat',
-    body: {
-      tools: {
-        searchPlaces: {
-          description: 'Search for places (attractions, cafes) in Tokyo by category, type, or keyword. Use this when user mentions specific interests.',
-          parameters: z.object({
-            query: z.string().describe('Search query or category (e.g., temples, sushi restaurants, modern architecture)'),
-          }),
-        },
-        createTour: {
-          description: 'Create a tour with selected place IDs and tour title. Call this when user confirms their tour choices.',
-          parameters: z.object({
-            title: z.string().describe('Tour title'),
-            placeIds: z.array(z.string()).describe('Array of place IDs to include in tour'),
-          }),
-        },
-      },
-    },
-    async onToolCall({ toolCall }) {
-      if (toolCall.toolName === 'searchPlaces') {
-        const allPlaces = [
-          ...(attractionsQuery.data || []).map(p => ({ ...p, type: 'attraction' })),
-          ...(cafesQuery.data || []).map(p => ({ ...p, type: 'cafe' })),
-        ];
-        
-        const filtered = allPlaces.filter(place => 
-          place.name.toLowerCase().includes(toolCall.args.query.toLowerCase()) ||
-          place.category?.toLowerCase().includes(toolCall.args.query.toLowerCase()) ||
-          place.description?.toLowerCase().includes(toolCall.args.query.toLowerCase())
-        ).slice(0, 8);
-        
-        return {
-          places: filtered.map(p => ({
-            id: p.id,
-            name: p.name,
-            category: p.category,
-            description: p.description,
-          })),
-        };
+  const [messages, setMessages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleToolCall = async (toolName: string, args: any) => {
+    if (toolName === 'searchPlaces') {
+      const allPlaces = [
+        ...(attractionsQuery.data || []).map(p => ({ ...p, type: 'attraction' })),
+        ...(cafesQuery.data || []).map(p => ({ ...p, type: 'cafe' })),
+      ];
+      
+      const filtered = allPlaces.filter(place => 
+        place.name.toLowerCase().includes(args.query.toLowerCase()) ||
+        place.category?.toLowerCase().includes(args.query.toLowerCase()) ||
+        place.description?.toLowerCase().includes(args.query.toLowerCase())
+      ).slice(0, 8);
+      
+      return {
+        places: filtered.map(p => ({
+          id: p.id,
+          name: p.name,
+          category: p.category,
+          description: p.description,
+        })),
+      };
+    }
+    
+    if (toolName === 'createTour') {
+      if (!user.location) {
+        return { error: 'User location not available' };
       }
       
-      if (toolCall.toolName === 'createTour') {
-        if (!user.location) {
-          return { error: 'User location not available' };
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() + 1);
+      
+      generateTourMutation.mutate({
+        userId: user.id,
+        title: args.title,
+        placeIds: args.placeIds,
+        userLocation: user.location,
+        startDate: startDate.toISOString(),
+      });
+      
+      return { success: true, message: 'Creating your tour...' };
+    }
+  };
+
+  const append = async ({ role, content }: { role: string; content: string }) => {
+    const userMessage = { id: `msg-${Date.now()}`, role, content };
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(process.env.EXPO_PUBLIC_RORK_API_BASE_URL + '/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage],
+          tools: {
+            searchPlaces: {
+              description: 'Search for places (attractions, cafes) in Tokyo by category, type, or keyword.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  query: { type: 'string', description: 'Search query' }
+                },
+                required: ['query']
+              },
+            },
+            createTour: {
+              description: 'Create a tour with selected place IDs and tour title.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string', description: 'Tour title' },
+                  placeIds: { type: 'array', items: { type: 'string' }, description: 'Place IDs' }
+                },
+                required: ['title', 'placeIds']
+              },
+            },
+          },
+        }),
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = { id: `msg-${Date.now() + 1}`, role: 'assistant', content: '', toolInvocations: [] as any[] };
+      setMessages(prev => [...prev, assistantMessage]);
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n').filter(line => line.trim());
+
+          for (const line of lines) {
+            if (line.startsWith('0:')) {
+              const text = line.substring(3).replace(/^"(.*)"$/, '$1');
+              assistantMessage.content += text;
+              setMessages(prev => prev.map(m => m.id === assistantMessage.id ? { ...assistantMessage } : m));
+            } else if (line.startsWith('9:')) {
+              const toolData = JSON.parse(line.substring(2));
+              if (toolData.toolCallId) {
+                const toolInvocation = {
+                  toolCallId: toolData.toolCallId,
+                  toolName: toolData.toolName,
+                  args: toolData.args,
+                  state: 'call' as const,
+                };
+                assistantMessage.toolInvocations.push(toolInvocation);
+                setMessages(prev => prev.map(m => m.id === assistantMessage.id ? { ...assistantMessage } : m));
+
+                const result = await handleToolCall(toolData.toolName, toolData.args);
+                const invIndex = assistantMessage.toolInvocations.findIndex(t => t.toolCallId === toolData.toolCallId);
+                if (invIndex !== -1) {
+                  assistantMessage.toolInvocations[invIndex] = {
+                    ...assistantMessage.toolInvocations[invIndex],
+                    state: 'result' as const,
+                    result,
+                  };
+                  setMessages(prev => prev.map(m => m.id === assistantMessage.id ? { ...assistantMessage } : m));
+                }
+              }
+            }
+          }
         }
-        
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() + 1);
-        
-        generateTourMutation.mutate({
-          userId: user.id,
-          title: toolCall.args.title,
-          placeIds: toolCall.args.placeIds,
-          userLocation: user.location,
-          startDate: startDate.toISOString(),
-        });
-        
-        return { success: true, message: 'Creating your tour...' };
       }
-    },
-  });
+    } catch (error) {
+      console.error('Chat error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -243,7 +312,7 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
                 contentContainerStyle={styles.messagesContent}
                 showsVerticalScrollIndicator={false}
               >
-                {messages.map((msg) => (
+                {messages.map((msg: any) => (
                   <View key={msg.id} style={{ marginVertical: 6 }}>
                     {msg.content && (
                       <View
@@ -260,7 +329,7 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
                         </Text>
                       </View>
                     )}
-                    {msg.toolInvocations?.map((tool, i) => {
+                    {msg.toolInvocations?.map((tool: any, i: number) => {
                       if (tool.state === 'call') {
                         return (
                           <View key={`${msg.id}-${i}`} style={styles.toolBubble}>

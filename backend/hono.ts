@@ -50,7 +50,7 @@ app.post("/api/chat", async (c) => {
     tools: toolsConfig,
   });
 
-  return result.toDataStreamResponse();
+  return result.toTextStreamResponse();
 });
 
 export default app;
