@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Navigation, Route, X, MapPinned, Coffee, Star, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
@@ -19,6 +19,7 @@ export default function MapScreen() {
   const params = useLocalSearchParams();
   const mapRef = useRef<MapView>(null);
   const { getActiveTour } = useTourCreation();
+  const insets = useSafeAreaInsets();
   
   const activeTour = getActiveTour();
   const tourPlaces = activeTour 
@@ -223,7 +224,7 @@ export default function MapScreen() {
         )}
 
         {activeTour && showTourRoute && activeTour.detailedDays && activeTour.detailedDays[0] && (
-          <View style={styles.routePanel}>
+          <View style={[styles.routePanel, { bottom: 90 + insets.bottom }]}>
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false}
@@ -254,7 +255,7 @@ export default function MapScreen() {
         )}
 
         {selectedPlace && (
-          <View style={styles.selectedPlaceCard}>
+          <View style={[styles.selectedPlaceCard, { bottom: 20 + insets.bottom }]}>
             <TouchableOpacity 
               style={styles.closeCardButton}
               onPress={() => setSelectedPlace(null)}
@@ -413,7 +414,6 @@ const styles = StyleSheet.create({
   },
   routePanel: {
     position: 'absolute',
-    bottom: 90,
     left: 0,
     right: 0,
   },
@@ -459,7 +459,6 @@ const styles = StyleSheet.create({
   },
   selectedPlaceCard: {
     position: 'absolute',
-    bottom: 20,
     left: 20,
     right: 20,
     backgroundColor: Colors.surface,
