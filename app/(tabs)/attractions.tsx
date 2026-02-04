@@ -24,6 +24,16 @@ export default function AttractionsScreen() {
     userLocation: user.location,
   });
 
+  // Debug logging
+  useEffect(() => {
+    if (attractionsQuery.error) {
+      console.error('[Attractions] Query error:', attractionsQuery.error);
+    }
+    if (attractionsQuery.data) {
+      console.log('[Attractions] Data received:', attractionsQuery.data.length);
+    }
+  }, [attractionsQuery.error, attractionsQuery.data]);
+
   const attractionsRaw = attractionsQuery.data || [];
 
   const attractions = attractionsRaw.map(place => {

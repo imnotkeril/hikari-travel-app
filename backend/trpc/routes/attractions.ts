@@ -13,13 +13,17 @@ export const attractionsRouter = createTRPCRouter({
       ward: z.string().optional(),
     }).optional())
     .query(({ input }) => {
+      console.log('[Attractions API] getAll called');
       let attractions = db.attractions.getAll();
+      console.log('[Attractions API] Current count:', attractions.length);
       
       // If no attractions, try to seed again (shouldn't happen, but just in case)
       if (attractions.length === 0) {
+        console.warn('[Attractions API] No attractions found! Re-seeding...');
         const { seedDatabase } = require("../../services/seed-data");
         seedDatabase();
         attractions = db.attractions.getAll();
+        console.log('[Attractions API] After re-seeding:', attractions.length);
       }
       
       if (input?.ward) {
