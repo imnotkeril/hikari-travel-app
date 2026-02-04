@@ -15,6 +15,13 @@ export const attractionsRouter = createTRPCRouter({
     .query(({ input }) => {
       let attractions = db.attractions.getAll();
       
+      // If no attractions, try to seed again (shouldn't happen, but just in case)
+      if (attractions.length === 0) {
+        const { seedDatabase } = require("../../services/seed-data");
+        seedDatabase();
+        attractions = db.attractions.getAll();
+      }
+      
       if (input?.ward) {
         attractions = db.attractions.getByWard(input.ward);
       }

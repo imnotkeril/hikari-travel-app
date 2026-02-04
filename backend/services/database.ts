@@ -101,7 +101,9 @@ export const db = {
     getAll: () => inMemoryDB.attractions,
     getById: (id: string) => inMemoryDB.attractions.find(p => p.id === id),
     getByWard: (ward: string) => inMemoryDB.attractions.filter(p => p.ward === ward),
-    seed: (data: Place[]) => { inMemoryDB.attractions = data; },
+    seed: (data: Place[]) => { 
+      inMemoryDB.attractions = data;
+    },
   },
   cafes: {
     getAll: () => inMemoryDB.cafes,
