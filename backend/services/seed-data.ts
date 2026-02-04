@@ -767,10 +767,26 @@ const templateTours: TemplateTour[] = [
   },
 ];
 
+let isSeeded = false;
+
 export function seedDatabase() {
+  // Prevent multiple seeding
+  if (isSeeded) {
+    return;
+  }
+
   db.attractions.seed(attractions);
   db.cafes.seed(cafes);
   db.events.seed(events);
   db.templateTours.seed(templateTours);
-  console.log('Database seeded successfully');
+  
+  // Verify seeding
+  const seededAttractions = db.attractions.getAll();
+  if (seededAttractions.length === 0) {
+    console.error('[Seed] ERROR: No attractions were seeded!');
+  } else {
+    console.log(`[Seed] Database initialized: ${seededAttractions.length} attractions, ${db.cafes.getAll().length} cafes, ${db.events.getAll().length} events, ${db.templateTours.getAll().length} tours`);
+  }
+  
+  isSeeded = true;
 }

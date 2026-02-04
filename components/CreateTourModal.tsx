@@ -5,7 +5,7 @@ import { X, Sparkles, ListChecks, Send, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { trpc } from '@/lib/trpc';
+import { trpc, getBaseUrl } from '@/lib/trpc';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 
@@ -93,7 +93,7 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
     setIsLoading(true);
 
     try {
-      const response = await fetch(process.env.EXPO_PUBLIC_RORK_API_BASE_URL + '/api/chat', {
+      const response = await fetch(getBaseUrl() + '/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
