@@ -64,11 +64,7 @@ export default function MapScreen() {
     
     const { lat, lng } = selectedPlace.coordinates;
     const label = encodeURIComponent(selectedPlace.name);
-    const url = Platform.select({
-      ios: `maps://?daddr=${lat},${lng}&dirflg=w`,
-      android: `google.navigation:q=${lat},${lng}&mode=w`,
-      default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`,
-    });
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
     
     Linking.openURL(url);
   };
@@ -276,7 +272,7 @@ export default function MapScreen() {
               onPress={() => router.push({ pathname: '/place/[id]', params: { id: selectedPlace.id } })}
             >
               <Image 
-                source={{ uri: selectedPlace.image || selectedPlace.images?.[0] || '' }} 
+                source={{ uri: selectedPlace.images?.[0] || selectedPlace.image || '' }} 
                 style={styles.selectedPlaceImage}
                 contentFit="cover"
               />
