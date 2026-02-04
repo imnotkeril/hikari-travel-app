@@ -7,7 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Colors from '@/constants/colors';
-import { attractions, restaurants, cafes } from '@/mocks/places';
+import { trpc } from '@/lib/trpc';
+import { useUser } from '@/contexts/UserContext';
 import { useTourCreation } from '@/contexts/TourCreationContext';
 
 export default function MapScreen() {
@@ -20,6 +21,14 @@ export default function MapScreen() {
   const mapRef = useRef<MapView>(null);
   const { getActiveTour } = useTourCreation();
   const insets = useSafeAreaInsets();
+  const { user } = useUser();
+  
+  const attractionsQuery = trpc.attractions.getAll.useQuery({ userLocation: user.location });
+  const cafesQuery = trpc.cafes.getAll.useQuery({ userLocation: user.location });
+  
+  const attractions = attractionsQuery.data || [];
+  const cafes = cafesQuery.data || [];
+  const restaurants = cafes.filter(c => c.type === 'restaurant');
   
   const activeTour = getActiveTour();
   const tourPlaces = activeTour 
