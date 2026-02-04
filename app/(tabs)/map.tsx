@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Navigation, Route, X, MapPinned, Coffee, Star, ExternalLink } from 'lucide-react-native';
+import { Navigation, Route, X, MapPinned, Coffee, Star, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -283,10 +283,11 @@ export default function MapScreen() {
             
             <TouchableOpacity 
               style={styles.directionsButton}
+              activeOpacity={0.8}
               onPress={handleOpenGoogleMaps}
             >
-              <ExternalLink size={16} color={Colors.snowWhite} />
-              <Text style={styles.directionsButtonText}>Directions</Text>
+              <MapPin size={18} color={Colors.snowWhite} />
+              <Text style={styles.directionsButtonText}>Проложить маршрут</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -526,9 +527,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.sakuraPink,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 14,
     gap: 8,
+    shadowColor: Colors.sakuraPink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   directionsButtonText: {
     fontSize: 16,
