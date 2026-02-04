@@ -5,7 +5,7 @@ import { X, Sparkles, ListChecks, Send, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { useRorkAgent, createRorkTool } from '@rork-ai/toolkit-sdk';
+import { useChat } from 'ai/react';
 import { z } from 'zod';
 import { trpc } from '@/lib/trpc';
 import { useUser } from '@/contexts/UserContext';
@@ -44,68 +44,74 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
     },
   });
   
-  const { messages, sendMessage, setMessages } = useRorkAgent({
-    tools: {
-      searchPlaces: createRorkTool({
-        description: 'Search for places (attractions, cafes) in Tokyo by category, type, or keyword. Use this when user mentions specific interests.',
-        zodSchema: z.object({
-          query: z.string().describe('Search query or category (e.g., temples, sushi restaurants, modern architecture)'),
-        }),
-        execute: async (input) => {
-          const allPlaces = [
-            ...(attractionsQuery.data || []).map(p => ({ ...p, type: 'attraction' })),
-            ...(cafesQuery.data || []).map(p => ({ ...p, type: 'cafe' })),
-          ];
-          
-          const filtered = allPlaces.filter(place => 
-            place.name.toLowerCase().includes(input.query.toLowerCase()) ||
-            place.category?.toLowerCase().includes(input.query.toLowerCase()) ||
-            place.description?.toLowerCase().includes(input.query.toLowerCase())
-          ).slice(0, 8);
-          
-          return JSON.stringify({
-            places: filtered.map(p => ({
-              id: p.id,
-              name: p.name,
-              category: p.category,
-              description: p.description,
-            })),
-          });
+  const { messages, append, setMessages, isLoading } = useChat({
+    api: process.env.EXPO_PUBLIC_RORK_API_BASE_URL + '/api/chat',
+    body: {
+      tools: {
+        searchPlaces: {
+          description: 'Search for places (attractions, cafes) in Tokyo by category, type, or keyword. Use this when user mentions specific interests.',
+          parameters: z.object({
+            query: z.string().describe('Search query or category (e.g., temples, sushi restaurants, modern architecture)'),
+          }),
         },
-      }),
-      createTour: createRorkTool({
-        description: 'Create a tour with selected place IDs and tour title. Call this when user confirms their tour choices.',
-        zodSchema: z.object({
-          title: z.string().describe('Tour title'),
-          placeIds: z.array(z.string()).describe('Array of place IDs to include in tour'),
-        }),
-        execute: async (input) => {
-          if (!user.location) {
-            return JSON.stringify({ error: 'User location not available' });
-          }
-          
-          const startDate = new Date();
-          startDate.setDate(startDate.getDate() + 1);
-          
-          generateTourMutation.mutate({
-            userId: user.id,
-            title: input.title,
-            placeIds: input.placeIds,
-            userLocation: user.location,
-            startDate: startDate.toISOString(),
-          });
-          
-          return JSON.stringify({ success: true, message: 'Creating your tour...' });
+        createTour: {
+          description: 'Create a tour with selected place IDs and tour title. Call this when user confirms their tour choices.',
+          parameters: z.object({
+            title: z.string().describe('Tour title'),
+            placeIds: z.array(z.string()).describe('Array of place IDs to include in tour'),
+          }),
         },
-      }),
+      },
+    },
+    async onToolCall({ toolCall }) {
+      if (toolCall.toolName === 'searchPlaces') {
+        const allPlaces = [
+          ...(attractionsQuery.data || []).map(p => ({ ...p, type: 'attraction' })),
+          ...(cafesQuery.data || []).map(p => ({ ...p, type: 'cafe' })),
+        ];
+        
+        const filtered = allPlaces.filter(place => 
+          place.name.toLowerCase().includes(toolCall.args.query.toLowerCase()) ||
+          place.category?.toLowerCase().includes(toolCall.args.query.toLowerCase()) ||
+          place.description?.toLowerCase().includes(toolCall.args.query.toLowerCase())
+        ).slice(0, 8);
+        
+        return {
+          places: filtered.map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            description: p.description,
+          })),
+        };
+      }
+      
+      if (toolCall.toolName === 'createTour') {
+        if (!user.location) {
+          return { error: 'User location not available' };
+        }
+        
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() + 1);
+        
+        generateTourMutation.mutate({
+          userId: user.id,
+          title: toolCall.args.title,
+          placeIds: toolCall.args.placeIds,
+          userLocation: user.location,
+          startDate: startDate.toISOString(),
+        });
+        
+        return { success: true, message: 'Creating your tour...' };
+      }
     },
   });
 
   const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isLoading) return;
     const text = inputText;
     setInputText('');
-    await sendMessage(text);
+    await append({ role: 'user', content: text });
   };
   
   useEffect(() => {
@@ -114,10 +120,7 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
         {
           id: `msg-${Date.now()}`,
           role: 'assistant',
-          parts: [{
-            type: 'text' as const,
-            text: 'Hi! I\'ll help you create the perfect Tokyo tour. What are you interested in? (temples, sushi restaurants, modern architecture, shopping, parks, etc.)',
-          }],
+          content: 'Hi! I\'ll help you create the perfect Tokyo tour. What are you interested in? (temples, sushi restaurants, modern architecture, shopping, parks, etc.)',
         },
       ]);
     }
@@ -242,71 +245,53 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
               >
                 {messages.map((msg) => (
                   <View key={msg.id} style={{ marginVertical: 6 }}>
-                    {msg.parts.map((part, i) => {
-                      if (part.type === 'text') {
+                    {msg.content && (
+                      <View
+                        style={[
+                          styles.messageBubble,
+                          msg.role === 'user' ? styles.userBubble : styles.aiBubble
+                        ]}
+                      >
+                        <Text style={[
+                          styles.messageText,
+                          msg.role === 'user' ? styles.userText : styles.aiText
+                        ]}>
+                          {msg.content}
+                        </Text>
+                      </View>
+                    )}
+                    {msg.toolInvocations?.map((tool, i) => {
+                      if (tool.state === 'call') {
                         return (
-                          <View
-                            key={`${msg.id}-${i}`}
-                            style={[
-                              styles.messageBubble,
-                              msg.role === 'user' ? styles.userBubble : styles.aiBubble
-                            ]}
-                          >
-                            <Text style={[
-                              styles.messageText,
-                              msg.role === 'user' ? styles.userText : styles.aiText
-                            ]}>
-                              {part.text}
+                          <View key={`${msg.id}-${i}`} style={styles.toolBubble}>
+                            <ActivityIndicator size="small" color={Colors.sakuraPink} />
+                            <Text style={styles.toolText}>
+                              {tool.toolName === 'searchPlaces' ? 'Searching places...' : 'Creating tour...'}
                             </Text>
                           </View>
                         );
                       }
                       
-                      if (part.type === 'tool') {
-                        switch (part.state) {
-                          case 'input-streaming':
-                          case 'input-available':
+                      if (tool.state === 'result') {
+                        if (tool.toolName === 'searchPlaces') {
+                          const output = tool.result;
+                          if (output?.places) {
                             return (
-                              <View key={`${msg.id}-${i}`} style={styles.toolBubble}>
-                                <ActivityIndicator size="small" color={Colors.sakuraPink} />
-                                <Text style={styles.toolText}>
-                                  {part.toolName === 'searchPlaces' ? 'Searching places...' : 'Creating tour...'}
-                                </Text>
-                              </View>
-                            );
-                          
-                          case 'output-available':
-                            if (part.toolName === 'searchPlaces') {
-                              try {
-                                const output = typeof part.output === 'string' ? JSON.parse(part.output) : part.output;
-                                if (output?.places) {
-                                  return (
-                                    <View key={`${msg.id}-${i}`} style={styles.placesContainer}>
-                                      {output.places.map((place: any) => (
-                                        <View key={place.id} style={styles.placeCard}>
-                                          <MapPin size={16} color={Colors.sakuraPink} />
-                                          <View style={styles.placeInfo}>
-                                            <Text style={styles.placeName}>{place.name}</Text>
-                                            <Text style={styles.placeCategory} numberOfLines={1}>{place.category}</Text>
-                                          </View>
-                                        </View>
-                                      ))}
+                              <View key={`${msg.id}-${i}`} style={styles.placesContainer}>
+                                {output.places.map((place: any) => (
+                                  <View key={place.id} style={styles.placeCard}>
+                                    <MapPin size={16} color={Colors.sakuraPink} />
+                                    <View style={styles.placeInfo}>
+                                      <Text style={styles.placeName}>{place.name}</Text>
+                                      <Text style={styles.placeCategory} numberOfLines={1}>{place.category}</Text>
                                     </View>
-                                  );
-                                }
-                              } catch (e) {
-                                console.error('Failed to parse tool output:', e);
-                              }
-                            }
-                            return null;
-                          
-                          case 'output-error':
-                            return (
-                              <View key={`${msg.id}-${i}`} style={styles.errorBubble}>
-                                <Text style={styles.errorText}>Error: {part.errorText}</Text>
+                                  </View>
+                                ))}
                               </View>
                             );
+                          }
                         }
+                        return null;
                       }
                       return null;
                     })}
