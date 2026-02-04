@@ -6,24 +6,9 @@ import { openai } from "@ai-sdk/openai";
 
 import { appRouter } from "./trpc/app-router";
 import { createContext } from "./trpc/create-context";
-import { seedDatabase } from "./services/seed-data";
+import "./services/seed-data";
 
 const app = new Hono();
-
-// Initialize database on first request (lazy initialization)
-let dbInitialized = false;
-const ensureDatabaseInitialized = () => {
-  if (!dbInitialized) {
-    seedDatabase();
-    dbInitialized = true;
-  }
-};
-
-// Middleware to ensure database is initialized
-app.use("*", async (c, next) => {
-  ensureDatabaseInitialized();
-  return next();
-});
 
 app.use("*", cors());
 
