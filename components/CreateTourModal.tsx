@@ -63,14 +63,14 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
             place.description?.toLowerCase().includes(input.query.toLowerCase())
           ).slice(0, 8);
           
-          return {
+          return JSON.stringify({
             places: filtered.map(p => ({
               id: p.id,
               name: p.name,
               category: p.category,
               description: p.description,
             })),
-          };
+          });
         },
       }),
       createTour: createRorkTool({
@@ -81,7 +81,7 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
         }),
         execute: async (input) => {
           if (!user.location) {
-            return { error: 'User location not available' };
+            return JSON.stringify({ error: 'User location not available' });
           }
           
           const startDate = new Date();
@@ -95,19 +95,10 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
             startDate: startDate.toISOString(),
           });
           
-          return { success: true, message: 'Creating your tour...' };
+          return JSON.stringify({ success: true, message: 'Creating your tour...' });
         },
       }),
     },
-    initialMessages: [
-      {
-        role: 'assistant',
-        parts: [{
-          type: 'text' as const,
-          text: 'Hi! I\'ll help you create the perfect Tokyo tour. What are you interested in? (temples, sushi restaurants, modern architecture, shopping, parks, etc.)',
-        }],
-      },
-    ],
   });
 
   const handleSendMessage = async () => {
@@ -118,9 +109,10 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
   };
   
   useEffect(() => {
-    if (!visible) {
+    if (visible && mode === 'ai' && messages.length === 0) {
       setMessages([
         {
+          id: `msg-${Date.now()}`,
           role: 'assistant',
           parts: [{
             type: 'text' as const,
@@ -129,7 +121,7 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
         },
       ]);
     }
-  }, [visible]);
+  }, [visible, mode, messages.length, setMessages]);
 
   const handleManualCreate = () => {
     setMode('naming');
@@ -284,20 +276,27 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
                             );
                           
                           case 'output-available':
-                            if (part.toolName === 'searchPlaces' && part.output?.places) {
-                              return (
-                                <View key={`${msg.id}-${i}`} style={styles.placesContainer}>
-                                  {part.output.places.map((place: any) => (
-                                    <View key={place.id} style={styles.placeCard}>
-                                      <MapPin size={16} color={Colors.sakuraPink} />
-                                      <View style={styles.placeInfo}>
-                                        <Text style={styles.placeName}>{place.name}</Text>
-                                        <Text style={styles.placeCategory} numberOfLines={1}>{place.category}</Text>
-                                      </View>
+                            if (part.toolName === 'searchPlaces') {
+                              try {
+                                const output = typeof part.output === 'string' ? JSON.parse(part.output) : part.output;
+                                if (output?.places) {
+                                  return (
+                                    <View key={`${msg.id}-${i}`} style={styles.placesContainer}>
+                                      {output.places.map((place: any) => (
+                                        <View key={place.id} style={styles.placeCard}>
+                                          <MapPin size={16} color={Colors.sakuraPink} />
+                                          <View style={styles.placeInfo}>
+                                            <Text style={styles.placeName}>{place.name}</Text>
+                                            <Text style={styles.placeCategory} numberOfLines={1}>{place.category}</Text>
+                                          </View>
+                                        </View>
+                                      ))}
                                     </View>
-                                  ))}
-                                </View>
-                              );
+                                  );
+                                }
+                              } catch (e) {
+                                console.error('Failed to parse tool output:', e);
+                              }
                             }
                             return null;
                           
