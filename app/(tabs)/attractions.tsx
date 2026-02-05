@@ -9,9 +9,10 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import FilterModal, { FilterOptions } from '@/components/FilterModal';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { getAttractions } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
-import { calculateDistance } from '@/backend/services/distance-calculator';
+import { calculateDistance } from '@/api/services/distance-calculator';
 
 export default function AttractionsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,19 +21,29 @@ export default function AttractionsScreen() {
   const router = useRouter();
   const { user } = useUser();
   const { selectionMode, selectedPlaces, togglePlaceSelection, createTour } = useTourCreation();
-  const attractionsQuery = trpc.attractions.getAll.useQuery({
-    userLocation: user.location,
+  const attractionsQuery = useQuery({
+    queryKey: ['attractions', user.location],
+    queryFn: () => getAttractions(user.location),
   });
 
   // Debug logging
   useEffect(() => {
+    console.log('[Attractions Screen] Query state:', {
+      isLoading: attractionsQuery.isLoading,
+      isError: attractionsQuery.isError,
+      isSuccess: attractionsQuery.isSuccess,
+      dataLength: attractionsQuery.data?.length || 0,
+      error: attractionsQuery.error?.message || null,
+    });
+    
     if (attractionsQuery.error) {
       console.error('[Attractions] Query error:', attractionsQuery.error);
+      console.error('[Attractions] Error details:', JSON.stringify(attractionsQuery.error, null, 2));
     }
     if (attractionsQuery.data) {
-      console.log('[Attractions] Data received:', attractionsQuery.data.length);
+      console.log('[Attractions] Data received:', attractionsQuery.data.length, 'items');
     }
-  }, [attractionsQuery.error, attractionsQuery.data]);
+  }, [attractionsQuery.isLoading, attractionsQuery.isError, attractionsQuery.isSuccess, attractionsQuery.data, attractionsQuery.error]);
 
   const attractionsRaw = attractionsQuery.data || [];
 

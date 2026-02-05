@@ -8,9 +8,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/colors';
 import FilterModal, { FilterOptions } from '@/components/FilterModal';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { getCafes } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
-import { calculateDistance } from '@/backend/services/distance-calculator';
+import { calculateDistance } from '@/api/services/distance-calculator';
 
 export default function CafeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,8 +22,9 @@ export default function CafeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  const cafesQuery = trpc.cafes.getAll.useQuery({
-    userLocation: user.location,
+  const cafesQuery = useQuery({
+    queryKey: ['cafes', user.location],
+    queryFn: () => getCafes(user.location),
   });
 
   useEffect(() => {

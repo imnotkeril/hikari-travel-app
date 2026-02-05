@@ -1,6 +1,7 @@
-import { db, Place, Event, TemplateTour } from './database';
+// Export all data from seed-data
+import type { Place, Event, TemplateTour } from './types';
 
-const attractions: Place[] = [
+export const attractions: Place[] = [
   {
     id: '1',
     name: 'Senso-ji Temple',
@@ -525,7 +526,7 @@ const attractions: Place[] = [
   },
 ];
 
-const cafes: Place[] = [
+export const cafes: Place[] = [
   {
     id: 'c1',
     name: 'Blue Bottle Coffee Shinjuku',
@@ -618,7 +619,7 @@ const cafes: Place[] = [
   },
 ];
 
-const events: Event[] = [
+export const events: Event[] = [
   {
     id: 'e1',
     name: 'Cherry Blossom Festival',
@@ -694,7 +695,7 @@ const events: Event[] = [
   },
 ];
 
-const templateTours: TemplateTour[] = [
+export const templateTours: TemplateTour[] = [
   {
     id: 'tokyo-classics-3d',
     title: 'Tokyo Classics 3 Days',
@@ -727,7 +728,7 @@ const templateTours: TemplateTour[] = [
       'Mandarake treasure hunting',
       'Maid cafe experience',
     ],
-    placeIds: ['8', '15', 'c3', '14'],
+    placeIds: ['8', '15', 'c2', '14'],
     isTemplate: true,
   },
   {
@@ -766,14 +767,3 @@ const templateTours: TemplateTour[] = [
     isTemplate: true,
   },
 ];
-
-export function seedDatabase() {
-  db.attractions.seed(attractions);
-  db.cafes.seed(cafes);
-  db.events.seed(events);
-  db.templateTours.seed(templateTours);
-  
-  console.log(`[Seed] Database seeded: ${db.attractions.getAll().length} attractions, ${db.cafes.getAll().length} cafes, ${db.events.getAll().length} events, ${db.templateTours.getAll().length} tours`);
-}
-
-seedDatabase();

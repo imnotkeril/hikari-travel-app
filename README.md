@@ -1,318 +1,231 @@
-# Welcome to your Rork app
+# Hikari Travel App
 
-## Project info
+A modern travel guide application for Tokyo, built with React Native and Expo. Discover attractions, cafes, events, and create personalized tours with AI assistance.
 
-This is a native cross-platform mobile app created with [Rork](https://rork.com)
+## Features
 
-**Platform**: Native iOS & Android app, exportable to web
-**Framework**: Expo Router + React Native
+### 🗾 Attractions
+- Browse 29+ popular Tokyo attractions
+- Filter by category, rating, distance, and ward
+- View detailed information, images, and reviews
+- Calculate distance and travel time from your location
 
-## How can I edit this code?
+### ☕ Cafes & Restaurants
+- Explore cafes and restaurants across Tokyo
+- Filter by cuisine type, price level, and features
+- Find nearby dining options with distance calculations
 
-There are several ways of editing your native mobile application.
+### 🎉 Events
+- Discover upcoming events and festivals
+- View event details, dates, and tips
+- Get information about admission fees and locations
 
-### **Use Rork**
+### 🗺️ Interactive Map
+- Visualize all places on an interactive map
+- Filter by type (attractions, cafes, restaurants)
+- View tour routes and navigate to locations
 
-Simply visit [rork.com](https://rork.com) and prompt to build your app with AI.
+### 🎯 Custom Tours
+- Create personalized tours by selecting places
+- AI-powered tour generation with natural language
+- Automatic route optimization
+- Multi-day tour planning with time estimates
+- Cost calculations including transport and admission fees
 
-Changes made via Rork will be committed automatically to this GitHub repo.
+### ⭐ Favorites
+- Save favorite places for quick access
+- Manage your saved locations
 
-Whenever you make a change in your local code editor and push it to GitHub, it will be also reflected in Rork.
+## Tech Stack
 
-### **Use your preferred code editor**
+- **Frontend**: React Native, Expo Router, TypeScript
+- **Backend**: Bun REST API
+- **State Management**: React Query, Zustand
+- **AI**: OpenAI API (for tour generation)
+- **Maps**: React Native Maps
+- **UI**: Expo components, Lucide icons
 
-If you want to work locally using your own code editor, you can clone this repo and push changes. Pushed changes will also be reflected in Rork.
+## Prerequisites
 
-If you are new to coding and unsure which editor to use, we recommend Cursor. If you're familiar with terminals, try Claude Code.
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [Bun](https://bun.sh/) (latest version)
+- OpenAI API key (for AI features)
 
-The only requirement is having Node.js & Bun installed - [install Node.js with nvm](https://github.com/nvm-sh/nvm) and [install Bun](https://bun.sh/docs/installation)
+## Installation
 
-Follow these steps:
-
+1. Clone the repository:
 ```bash
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-bun i
-
-# Step 4: Start the instant web preview of your Rork app in your browser, with auto-reloading of your changes
-bun run start-web
-
-# Step 5: Start iOS preview
-# Option A (recommended):
-bun run start  # then press "i" in the terminal to open iOS Simulator
-# Option B (if supported by your environment):
-bun run start -- --ios
+git clone <repository-url>
+cd travel-app
 ```
 
-### **Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-## What technologies are used for this project?
-
-This project is built with the most popular native mobile cross-platform technical stack:
-
-- **React Native** - Cross-platform native mobile development framework created by Meta and used for Instagram, Airbnb, and lots of top apps in the App Store
-- **Expo** - Extension of React Native + platform used by Discord, Shopify, Coinbase, Telsa, Starlink, Eightsleep, and more
-- **Expo Router** - File-based routing system for React Native with support for web, server functions and SSR
-- **TypeScript** - Type-safe JavaScript
-- **React Query** - Server state management
-- **Lucide React Native** - Beautiful icons
-
-## How can I test my app?
-
-### **On your phone (Recommended)**
-
-1. **iOS**: Download the [Rork app from the App Store](https://apps.apple.com/app/rork) or [Expo Go](https://apps.apple.com/app/expo-go/id982107779)
-2. **Android**: Download the [Expo Go app from Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
-3. Run `bun run start` and scan the QR code from your development server
-
-### **In your browser**
-
-Run `bun start-web` to test in a web browser. Note: The browser preview is great for quick testing, but some native features may not be available.
-
-### **iOS Simulator / Android Emulator**
-
-You can test Rork apps in Expo Go or Rork iOS app. You don't need XCode or Android Studio for most features.
-
-**When do you need Custom Development Builds?**
-
-- Native authentication (Face ID, Touch ID, Apple Sign In)
-- In-app purchases and subscriptions
-- Push notifications
-- Custom native modules
-
-Learn more: [Expo Custom Development Builds Guide](https://docs.expo.dev/develop/development-builds/introduction/)
-
-If you have XCode (iOS) or Android Studio installed:
-
+2. Install dependencies:
 ```bash
-# iOS Simulator
-bun run start -- --ios
-
-# Android Emulator
-bun run start -- --android
+bun install
 ```
 
-## How can I deploy this project?
+3. Create `.env` file in the root directory:
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+```
 
-### **Publish to App Store (iOS)**
+Get your OpenAI API key from: https://platform.openai.com/api-keys
 
-1. **Install EAS CLI**:
+## Running the Application
 
-   ```bash
-   bun i -g @expo/eas-cli
-   ```
+### Web Development
 
-2. **Configure your project**:
+**Terminal 1 - Start Backend Server:**
+```bash
+bun run server
+```
 
-   ```bash
-   eas build:configure
-   ```
+The API server will start on `http://localhost:3001`
 
-3. **Build for iOS**:
+**Terminal 2 - Start Frontend:**
+```bash
+bun run start:web
+```
 
-   ```bash
-   eas build --platform ios
-   ```
+Open `http://localhost:8081` (or the port shown in terminal) in your browser.
 
-4. **Submit to App Store**:
-   ```bash
-   eas submit --platform ios
-   ```
+### Native Development (iOS/Android)
 
-For detailed instructions, visit [Expo's App Store deployment guide](https://docs.expo.dev/submit/ios/).
+**Terminal 1 - Start Backend Server:**
+```bash
+bun run server
+```
 
-### **Publish to Google Play (Android)**
+**Terminal 2 - Start Expo:**
+```bash
+bun run start
+```
 
-1. **Build for Android**:
-
-   ```bash
-   eas build --platform android
-   ```
-
-2. **Submit to Google Play**:
-   ```bash
-   eas submit --platform android
-   ```
-
-For detailed instructions, visit [Expo's Google Play deployment guide](https://docs.expo.dev/submit/android/).
-
-### **Publish as a Website**
-
-Your React Native app can also run on the web:
-
-1. **Build for web**:
-
-   ```bash
-   eas build --platform web
-   ```
-
-2. **Deploy with EAS Hosting**:
-   ```bash
-   eas hosting:configure
-   eas hosting:deploy
-   ```
-
-Alternative web deployment options:
-
-- **Vercel**: Deploy directly from your GitHub repository
-- **Netlify**: Connect your GitHub repo to Netlify for automatic deployments
-
-## App Features
-
-This template includes:
-
-- **Cross-platform compatibility** - Works on iOS, Android, and Web
-- **File-based routing** with Expo Router
-- **Tab navigation** with customizable tabs
-- **Modal screens** for overlays and dialogs
-- **TypeScript support** for better development experience
-- **Async storage** for local data persistence
-- **Vector icons** with Lucide React Native
+Then:
+- Press `i` to open iOS Simulator
+- Press `a` to open Android Emulator
+- Scan QR code with Expo Go app on your device
 
 ## Project Structure
 
 ```
-├── app/                    # App screens (Expo Router)
+├── api/                    # Backend REST API
+│   ├── server.ts          # Bun server with REST endpoints
+│   ├── db.ts              # In-memory database
+│   ├── data.ts            # Seed data (attractions, cafes, events, tours)
+│   ├── types.ts           # TypeScript type definitions
+│   └── services/          # Business logic
+│       ├── distance-calculator.ts
+│       └── tour-optimizer.ts
+├── app/                   # App screens (Expo Router)
 │   ├── (tabs)/            # Tab navigation screens
-│   │   ├── _layout.tsx    # Tab layout configuration
-│   │   └── index.tsx      # Home tab screen
-│   ├── _layout.tsx        # Root layout
-│   ├── modal.tsx          # Modal screen example
-│   └── +not-found.tsx     # 404 screen
-├── assets/                # Static assets
-│   └── images/           # App icons and images
-├── constants/            # App constants and configuration
-├── app.json             # Expo configuration
-├── package.json         # Dependencies and scripts
-└── tsconfig.json        # TypeScript configuration
+│   │   ├── index.tsx      # Home screen
+│   │   ├── attractions.tsx
+│   │   ├── cafe.tsx
+│   │   ├── events.tsx
+│   │   ├── tours.tsx
+│   │   └── map.tsx
+│   ├── place/[id].tsx     # Place detail screen
+│   ├── event/[id].tsx     # Event detail screen
+│   ├── tour/[id].tsx      # Tour detail screen
+│   └── _layout.tsx        # Root layout
+├── components/             # Reusable React components
+│   ├── CreateTourModal.tsx
+│   ├── FilterModal.tsx
+│   └── TourEditModal.tsx
+├── contexts/              # React contexts
+│   ├── UserContext.tsx
+│   └── TourCreationContext.tsx
+├── lib/                   # Utilities
+│   └── api.ts            # API client for REST endpoints
+├── constants/             # App constants
+└── server.ts             # Server entry point
 ```
 
-## Custom Development Builds
+## API Endpoints
 
-For advanced native features, you'll need to create a Custom Development Build instead of using Expo Go.
+The backend provides the following REST endpoints:
 
-### **When do you need a Custom Development Build?**
+- `GET /health` - Health check
+- `GET /api/attractions?userLocation={lat,lng}` - Get all attractions
+- `GET /api/cafes?userLocation={lat,lng}` - Get all cafes/restaurants
+- `GET /api/events` - Get all events
+- `GET /api/tours?userId={id}` - Get all tours (templates + user tours)
+- `GET /api/tours/:id` - Get tour by ID
+- `POST /api/tours` - Create a new tour
+- `POST /api/chat` - AI chat endpoint (for tour generation)
 
-- **Native Authentication**: Face ID, Touch ID, Apple Sign In, Google Sign In
-- **In-App Purchases**: App Store and Google Play subscriptions
-- **Advanced Native Features**: Third-party SDKs, platform-specifc features (e.g. Widgets on iOS)
-- **Background Processing**: Background tasks, location tracking
+## Data
 
-### **Creating a Custom Development Build**
+The app uses an in-memory database seeded with:
+
+- **29 attractions** - Temples, museums, parks, observation decks
+- **5 cafes/restaurants** - Various dining options
+- **4 events** - Festivals and cultural events
+- **4 template tours** - Pre-made tour suggestions
+
+Data is loaded from `api/data.ts` on server startup.
+
+## Development
+
+### Adding New Data
+
+Edit `api/data.ts` to add new attractions, cafes, or events.
+
+### Adding New Features
+
+1. **New API endpoint**: Add route handler in `api/server.ts`
+2. **New screen**: Add file in `app/` directory
+3. **New component**: Add file in `components/` directory
+
+### Code Style
+
+- TypeScript for type safety
+- ESLint for code quality
+- Follow React Native best practices
+
+## Building for Production
+
+### iOS
 
 ```bash
-# Install EAS CLI
 bun i -g @expo/eas-cli
-
-# Configure your project for development builds
 eas build:configure
-
-# Create a development build for your device
-eas build --profile development --platform ios
-eas build --profile development --platform android
-
-# Install the development build on your device and start developing
-bun start --dev-client
+eas build --platform ios
 ```
 
-**Learn more:**
+### Android
 
-- [Development Builds Introduction](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Creating Development Builds](https://docs.expo.dev/develop/development-builds/create-a-build/)
-- [Installing Development Builds](https://docs.expo.dev/develop/development-builds/installation/)
+```bash
+eas build --platform android
+```
 
-## Advanced Features
+### Web
 
-### **Add a Database**
-
-Integrate with backend services:
-
-- **Supabase** - PostgreSQL database with real-time features
-- **Firebase** - Google's mobile development platform
-- **Custom API** - Connect to your own backend
-
-### **Add Authentication**
-
-Implement user authentication:
-
-**Basic Authentication (works in Expo Go):**
-
-- **Expo AuthSession** - OAuth providers (Google, Facebook, Apple) - [Guide](https://docs.expo.dev/guides/authentication/)
-- **Supabase Auth** - Email/password and social login - [Integration Guide](https://supabase.com/docs/guides/getting-started/tutorials/with-expo-react-native)
-- **Firebase Auth** - Comprehensive authentication solution - [Setup Guide](https://docs.expo.dev/guides/using-firebase/)
-
-**Native Authentication (requires Custom Development Build):**
-
-- **Apple Sign In** - Native Apple authentication - [Implementation Guide](https://docs.expo.dev/versions/latest/sdk/apple-authentication/)
-- **Google Sign In** - Native Google authentication - [Setup Guide](https://docs.expo.dev/guides/google-authentication/)
-
-### **Add Push Notifications**
-
-Send notifications to your users:
-
-- **Expo Notifications** - Cross-platform push notifications
-- **Firebase Cloud Messaging** - Advanced notification features
-
-### **Add Payments**
-
-Monetize your app:
-
-**Web & Credit Card Payments (works in Expo Go):**
-
-- **Stripe** - Credit card payments and subscriptions - [Expo + Stripe Guide](https://docs.expo.dev/guides/using-stripe/)
-- **PayPal** - PayPal payments integration - [Setup Guide](https://developer.paypal.com/docs/checkout/mobile/react-native/)
-
-**Native In-App Purchases (requires Custom Development Build):**
-
-- **RevenueCat** - Cross-platform in-app purchases and subscriptions - [Expo Integration Guide](https://www.revenuecat.com/docs/expo)
-- **Expo In-App Purchases** - Direct App Store/Google Play integration - [Implementation Guide](https://docs.expo.dev/versions/latest/sdk/in-app-purchases/)
-
-**Paywall Optimization:**
-
-- **Superwall** - Paywall A/B testing and optimization - [React Native SDK](https://docs.superwall.com/docs/react-native)
-- **Adapty** - Mobile subscription analytics and paywalls - [Expo Integration](https://docs.adapty.io/docs/expo)
-
-## I want to use a custom domain - is that possible?
-
-For web deployments, you can use custom domains with:
-
-- **EAS Hosting** - Custom domains available on paid plans
-- **Netlify** - Free custom domain support
-- **Vercel** - Custom domains with automatic SSL
-
-For mobile apps, you'll configure your app's deep linking scheme in `app.json`.
+```bash
+expo export:web
+```
 
 ## Troubleshooting
 
-### **App not loading on device?**
+### Backend not connecting?
 
-1. Make sure your phone and computer are on the same WiFi network
-2. Try using tunnel mode: `bun start -- --tunnel`
-3. Check if your firewall is blocking the connection
+1. Make sure backend server is running: `bun run server`
+2. Check that port 3001 is not in use
+3. Verify `.env` file exists with `OPENAI_API_KEY`
 
-### **Build failing?**
+### Data not loading?
 
-1. Clear your cache: `bunx expo start --clear`
-2. Delete `node_modules` and reinstall: `rm -rf node_modules && bun install`
-3. Check [Expo's troubleshooting guide](https://docs.expo.dev/troubleshooting/build-errors/)
+1. Check browser console for API errors
+2. Verify backend server is running and accessible
+3. Check network tab for failed requests
 
-### **Need help with native features?**
+### AI features not working?
 
-- Check [Expo's documentation](https://docs.expo.dev/) for native APIs
-- Browse [React Native's documentation](https://reactnative.dev/docs/getting-started) for core components
-- Visit [Rork's FAQ](https://rork.com/faq) for platform-specific questions
+1. Verify `OPENAI_API_KEY` is set in `.env`
+2. Check your OpenAI account has credits
+3. Restart backend server after changing `.env`
 
-## About Rork
+## License
 
-Rork builds fully native mobile apps using React Native and Expo - the same technology stack used by Discord, Shopify, Coinbase, Instagram, and nearly 30% of the top 100 apps on the App Store.
-
-Your Rork app is production-ready and can be published to both the App Store and Google Play Store. You can also export your app to run on the web, making it truly cross-platform.
+Private project

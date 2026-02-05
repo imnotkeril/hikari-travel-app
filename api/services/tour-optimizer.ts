@@ -1,4 +1,4 @@
-import { Place, TourDay, TourPlace } from './database';
+import type { Place, TourDay, TourPlace } from '../types';
 import { calculateDistance } from './distance-calculator';
 
 interface PlaceWithCoords extends Place {

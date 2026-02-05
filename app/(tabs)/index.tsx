@@ -5,7 +5,8 @@ import { Star, MapPin, Bell, User } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { getAttractions } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -21,8 +22,9 @@ export default function HomeScreen() {
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-  const attractionsQuery = trpc.attractions.getAll.useQuery({
-    userLocation: user.location,
+  const attractionsQuery = useQuery({
+    queryKey: ['attractions', user.location],
+    queryFn: () => getAttractions(user.location),
   });
 
   const topPlaces = (attractionsQuery.data || []).slice(0, 5);

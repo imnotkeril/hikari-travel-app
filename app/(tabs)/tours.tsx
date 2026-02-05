@@ -9,7 +9,8 @@ import { useRouter } from 'expo-router';
 import Colors from '@/constants/colors';
 import CreateTourModal from '@/components/CreateTourModal';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getTours, deleteTour } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 
 export default function ToursScreen() {
@@ -20,16 +21,22 @@ export default function ToursScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
-  const templateToursQuery = trpc.tours.getTemplateTours.useQuery();
-  const userToursQuery = trpc.tours.getUserTours.useQuery({ userId: user.id });
-  const deleteTourMutation = trpc.tours.deleteTour.useMutation({
+  const queryClient = useQueryClient();
+  const toursQuery = useQuery({
+    queryKey: ['tours', user.id],
+    queryFn: () => getTours(user.id),
+  });
+
+  const deleteTourMutation = useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) => deleteTour(id, userId),
     onSuccess: () => {
-      userToursQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ['tours', user.id] });
     },
   });
 
-  const readyTours = templateToursQuery.data || [];
-  const userTours = userToursQuery.data || [];
+  const allTours = toursQuery.data || [];
+  const readyTours = allTours.filter(t => 'isTemplate' in t && t.isTemplate);
+  const userTours = allTours.filter(t => 'isTemplate' in t && !t.isTemplate);
 
   useEffect(() => {
     Animated.parallel([
@@ -94,17 +101,14 @@ export default function ToursScreen() {
           contentContainerStyle={styles.contentContainer}
           refreshControl={
             <RefreshControl
-              refreshing={templateToursQuery.isRefetching || userToursQuery.isRefetching}
-              onRefresh={() => {
-                templateToursQuery.refetch();
-                userToursQuery.refetch();
-              }}
+              refreshing={toursQuery.isRefetching}
+              onRefresh={() => toursQuery.refetch()}
               tintColor={Colors.sakuraPink}
               colors={[Colors.sakuraPink]}
             />
           }
         >
-          {(templateToursQuery.isLoading || userToursQuery.isLoading) ? (
+          {toursQuery.isLoading ? (
             <View style={styles.section}>
               {[1, 2, 3].map(i => (
                 <View key={i} style={styles.skeletonTourCard}>
