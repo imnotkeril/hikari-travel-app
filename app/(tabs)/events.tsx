@@ -8,9 +8,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/colors';
 import FilterModal, { FilterOptions } from '@/components/FilterModal';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { getEvents } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
-import { calculateDistance } from '@/backend/services/distance-calculator';
+import { calculateDistance } from '@/api/services/distance-calculator';
 
 export default function EventsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,7 +22,10 @@ export default function EventsScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  const eventsQuery = trpc.events.getUpcoming.useQuery();
+  const eventsQuery = useQuery({
+    queryKey: ['events'],
+    queryFn: () => getEvents(),
+  });
 
   useEffect(() => {
     Animated.parallel([

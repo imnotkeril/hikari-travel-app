@@ -5,7 +5,9 @@ import { X, Sparkles, ListChecks, Send, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { trpc, getBaseUrl } from '@/lib/trpc';
+import { getBaseUrl } from '@/lib/api';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { createTour, getAttractions, getCafes } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 
@@ -22,15 +24,22 @@ export default function CreateTourModal({ visible, onClose, onEnableSelectionMod
   const { enableSelectionMode } = useTourCreation();
   const { user } = useUser();
   const router = useRouter();
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
   
-  const attractionsQuery = trpc.attractions.getAll.useQuery();
-  const cafesQuery = trpc.cafes.getAll.useQuery();
+  const attractionsQuery = useQuery({
+    queryKey: ['attractions'],
+    queryFn: () => getAttractions(),
+  });
+  const cafesQuery = useQuery({
+    queryKey: ['cafes'],
+    queryFn: () => getCafes(),
+  });
   
-  const generateTourMutation = trpc.tours.generateTour.useMutation({
+  const generateTourMutation = useMutation({
+    mutationFn: createTour,
     onSuccess: (data) => {
       console.log('AI Tour generated:', data);
-      utils.tours.getUserTours.invalidate();
+      queryClient.invalidateQueries({ queryKey: ['tours', user.id] });
       setMode(null);
       setInputText('');
       onClose();

@@ -1,7 +1,8 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { trpc } from '@/lib/trpc';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createTour as createTourAPI } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -33,13 +34,14 @@ export const [TourCreationProvider, useTourCreation] = createContextHook(() => {
   const [userTours, setUserTours] = useState<UserTour[]>([]);
   const { user } = useUser();
   const router = useRouter();
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
 
-  const generateTourMutation = trpc.tours.generateTour.useMutation({
+  const generateTourMutation = useMutation({
+    mutationFn: createTourAPI,
     onSuccess: async (data) => {
       console.log('Tour generated successfully:', data);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await utils.tours.getUserTours.invalidate();
+      await queryClient.invalidateQueries({ queryKey: ['tours', user.id] });
       disableSelectionMode();
       router.push({ pathname: '/tour/[id]', params: { id: data.id } });
     },

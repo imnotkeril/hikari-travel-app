@@ -8,8 +8,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { TourDay } from '@/mocks/tours';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { getTourById, getAttractions, getCafes } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
+import { optimizeTour } from '@/api/services/tour-optimizer';
 import TourEditModal from '@/components/TourEditModal';
 
 export default function TourDetailScreen() {
@@ -25,20 +27,44 @@ export default function TourDetailScreen() {
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
   
-  const tourQuery = trpc.tours.getTourById.useQuery({ id: id as string });
-  const attractionsQuery = trpc.attractions.getAll.useQuery();
-  const cafesQuery = trpc.cafes.getAll.useQuery();
-  const expandTemplateQuery = trpc.tours.expandTemplateTour.useQuery(
-    { 
-      templateId: id as string,
-      userLocation: user.location || { lat: 35.6762, lng: 139.6503 },
-      startDate: new Date().toISOString().split('T')[0]
-    },
-    { enabled: !!tourQuery.data && 'isTemplate' in tourQuery.data && tourQuery.data.isTemplate }
-  );
+  const tourQuery = useQuery({
+    queryKey: ['tour', id],
+    queryFn: () => getTourById(id as string),
+  });
+  const attractionsQuery = useQuery({
+    queryKey: ['attractions'],
+    queryFn: () => getAttractions(),
+  });
+  const cafesQuery = useQuery({
+    queryKey: ['cafes'],
+    queryFn: () => getCafes(),
+  });
   
   const allPlaces = [...(attractionsQuery.data || []), ...(cafesQuery.data || [])];
   const userTour = userTours.find((t) => t.id === id);
+  
+  // Expand template tour if needed
+  const tour = tourQuery.data;
+  const expandedTour = tour && 'isTemplate' in tour && tour.isTemplate
+    ? (() => {
+        const selectedPlaces = tour.placeIds
+          .map(placeId => allPlaces.find(p => p.id === placeId))
+          .filter((place): place is NonNullable<typeof place> => place !== undefined);
+        
+        if (selectedPlaces.length === 0) return tour;
+        
+        const tourDays = optimizeTour(
+          selectedPlaces,
+          user.location || { lat: 35.6762, lng: 139.6503 },
+          new Date()
+        );
+        
+        return {
+          ...tour,
+          detailedDays: tourDays,
+        };
+      })()
+    : tour;
 
   useEffect(() => {
     Animated.parallel([
@@ -61,7 +87,7 @@ export default function TourDetailScreen() {
     ]).start();
   }, [fadeAnim, slideAnim, scaleAnim]);
   
-  if (tourQuery.isLoading || attractionsQuery.isLoading || cafesQuery.isLoading) {
+  if (tourQuery.isLoading || (tour && 'isTemplate' in tour && tour.isTemplate && (attractionsQuery.isLoading || cafesQuery.isLoading))) {
     return (
       <View style={styles.container}>
         <LinearGradient
@@ -82,7 +108,7 @@ export default function TourDetailScreen() {
     );
   }
   
-  if (!tourQuery.data && !userTour) {
+  if (!expandedTour && !userTour) {
     return (
       <View style={styles.container}>
         <LinearGradient
@@ -104,7 +130,7 @@ export default function TourDetailScreen() {
   }
   
   const isUserTour = !!userTour;
-  const backendTour = tourQuery.data;
+  const backendTour = expandedTour || tourQuery.data;
   let tourData: any;
   let tourPlaces: any[] = [];
   let detailedDays: TourDay[] = [];
@@ -132,9 +158,9 @@ export default function TourDetailScreen() {
       isActive: userTour.isActive,
     };
   } else if (backendTour) {
-    if ('isTemplate' in backendTour && backendTour.isTemplate && expandTemplateQuery.data) {
+    if ('isTemplate' in backendTour && backendTour.isTemplate && expandedTour && 'detailedDays' in expandedTour) {
       tourData = backendTour;
-      detailedDays = expandTemplateQuery.data.detailedDays || [];
+      detailedDays = expandedTour.detailedDays || [];
     } else if ('detailedDays' in backendTour) {
       tourData = backendTour;
       detailedDays = backendTour.detailedDays || [];

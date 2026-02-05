@@ -5,19 +5,23 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, MapPin, Calendar, Clock, DollarSign, Map, Navigation } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { getEvents } from '@/lib/api';
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const eventQuery = trpc.events.getById.useQuery({ id: id as string });
-  const event = eventQuery.data;
+  const eventsQuery = useQuery({
+    queryKey: ['events'],
+    queryFn: () => getEvents(),
+  });
+  const event = eventsQuery.data?.find(e => e.id === id);
 
   const handleOpenMap = () => {
     router.push({ pathname: '/(tabs)/map', params: { selectedPlaceId: id } });
   };
 
-  if (eventQuery.isLoading) {
+  if (eventsQuery.isLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ color: Colors.textSecondary }}>Loading...</Text>

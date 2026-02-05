@@ -4,12 +4,29 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Navigation, Route, X, MapPinned, Coffee, Star, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Colors from '@/constants/colors';
-import { trpc } from '@/lib/trpc';
+import { useQuery } from '@tanstack/react-query';
+import { getAttractions, getCafes } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 import { useTourCreation } from '@/contexts/TourCreationContext';
+
+// Import react-native-maps (mock on web, real on native)
+// Metro resolver will automatically use mock on web platform
+let MapView: any = null;
+let Marker: any = null;
+let Polyline: any = null;
+let PROVIDER_DEFAULT: any = null;
+
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  Polyline = maps.Polyline;
+  PROVIDER_DEFAULT = maps.PROVIDER_DEFAULT;
+} catch (e) {
+  console.warn('react-native-maps not available');
+}
 
 export default function MapScreen() {
   const [showAttractions, setShowAttractions] = useState(true);
@@ -23,8 +40,14 @@ export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useUser();
   
-  const attractionsQuery = trpc.attractions.getAll.useQuery({ userLocation: user.location });
-  const cafesQuery = trpc.cafes.getAll.useQuery({ userLocation: user.location });
+  const attractionsQuery = useQuery({
+    queryKey: ['attractions', user.location],
+    queryFn: () => getAttractions(user.location),
+  });
+  const cafesQuery = useQuery({
+    queryKey: ['cafes', user.location],
+    queryFn: () => getCafes(user.location),
+  });
   
   const attractions = attractionsQuery.data || [];
   const cafes = cafesQuery.data || [];
@@ -77,6 +100,33 @@ export default function MapScreen() {
     
     Linking.openURL(url);
   };
+
+  // Web fallback - maps don't work on web
+  if (Platform.OS === 'web' || !MapView) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.map, { justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.surface }]}>
+          <Text style={{ fontSize: 18, color: Colors.textPrimary, marginBottom: 10 }}>🗺️ Map View</Text>
+          <Text style={{ fontSize: 14, color: Colors.textSecondary, textAlign: 'center', paddingHorizontal: 40 }}>
+            Interactive maps are available on iOS and Android.{'\n'}
+            On web, use the list view to browse places.
+          </Text>
+          <ScrollView style={{ marginTop: 20, width: '100%', paddingHorizontal: 20 }}>
+            {attractions.slice(0, 5).map((place) => (
+              <TouchableOpacity
+                key={place.id}
+                style={styles.placeCard}
+                onPress={() => router.push({ pathname: '/place/[id]', params: { id: place.id } })}
+              >
+                <Text style={styles.placeName}>{place.name}</Text>
+                <Text style={styles.placeCategory}>{place.category}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -538,6 +588,28 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   selectedPlaceCategory: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  // Web fallback styles
+  placeCard: {
+    backgroundColor: Colors.surface,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  placeName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  placeCategory: {
     fontSize: 14,
     color: Colors.textSecondary,
   },

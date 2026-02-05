@@ -7,8 +7,9 @@ import { ArrowLeft, MapPin, Star, Map, Plus, Train } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/colors';
 import { useTourCreation } from '@/contexts/TourCreationContext';
-import { calculateDistance } from '@/backend/services/distance-calculator';
-import { trpc } from '@/lib/trpc';
+import { calculateDistance } from '@/api/services/distance-calculator';
+import { useQuery } from '@tanstack/react-query';
+import { getAttractions, getCafes } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -21,23 +22,25 @@ export default function PlaceDetailScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
 
-  const attractionQuery = trpc.attractions.getById.useQuery(
-    { id: id as string },
-    { enabled: !!id }
-  );
-  const cafeQuery = trpc.cafes.getById.useQuery(
-    { id: id as string },
-    { enabled: !!id && !attractionQuery.data && !attractionQuery.isLoading }
-  );
-
-  const nearbyAttractionsQuery = trpc.attractions.getAll.useQuery({
-    userLocation: user.location,
+  const allAttractionsQuery = useQuery({
+    queryKey: ['attractions'],
+    queryFn: () => getAttractions(),
   });
-  const nearbyCafesQuery = trpc.cafes.getAll.useQuery({
-    userLocation: user.location,
+  const allCafesQuery = useQuery({
+    queryKey: ['cafes'],
+    queryFn: () => getCafes(),
   });
 
-  const place = attractionQuery.data || cafeQuery.data;
+  const nearbyAttractionsQuery = useQuery({
+    queryKey: ['attractions', user.location],
+    queryFn: () => getAttractions(user.location),
+  });
+  const nearbyCafesQuery = useQuery({
+    queryKey: ['cafes', user.location],
+    queryFn: () => getCafes(user.location),
+  });
+
+  const place = allAttractionsQuery.data?.find(p => p.id === id) || allCafesQuery.data?.find(p => p.id === id);
   
   const isSelected = selectedPlaces.includes(id as string);
 

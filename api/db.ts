@@ -1,91 +1,9 @@
-export interface Place {
-  id: string;
-  name: string;
-  category: string;
-  type: 'attraction' | 'restaurant' | 'cafe' | 'bar' | 'club';
-  rating: number;
-  reviewCount: number;
-  ward: string;
-  address: string;
-  coordinates: { lat: number; lng: number };
-  images: string[];
-  description: string;
-  openingHours?: string;
-  admissionFee?: number;
-  avgVisitDuration?: number;
-  priceLevel?: number;
-  cuisineTypes?: string[];
-  features?: string[];
-  nearestStation?: string;
-}
+// Simplified in-memory database
+import { attractions, cafes, events, templateTours } from './data';
+import type { Place, Event, TemplateTour, TourDay, UserTour } from './types';
 
-export interface Event {
-  id: string;
-  name: string;
-  type: string;
-  ward: string;
-  address: string;
-  coordinates: { lat: number; lng: number };
-  startDate: string;
-  endDate: string;
-  startTime?: string;
-  endTime?: string;
-  image: string;
-  description: string;
-  admissionFee: number;
-  website?: string;
-  tips?: string[];
-}
-
-export interface TourPlace {
-  placeId: string;
-  plannedTime: string;
-  visitDuration: number;
-  transportMode: 'walk' | 'metro' | 'taxi' | 'bus';
-  transportDuration: number;
-  transportCost: number;
-}
-
-export interface TourDay {
-  dayNumber: number;
-  date: string;
-  places: TourPlace[];
-  totalCost: number;
-  totalDuration: number;
-  notes?: string;
-}
-
-export interface TemplateTour {
-  id: string;
-  title: string;
-  days: number;
-  places: number;
-  estimatedCost: number;
-  totalHours: number;
-  description: string;
-  highlights: string[];
-  image: string;
-  placeIds: string[];
-  isTemplate: true;
-}
-
-export interface UserTour {
-  id: string;
-  userId: string;
-  title: string;
-  days: number;
-  places: number;
-  estimatedCost: number;
-  totalHours: number;
-  description: string;
-  highlights: string[];
-  image: string;
-  detailedDays: TourDay[];
-  isTemplate: false;
-  createdAt: string;
-}
-
-export type Tour = TemplateTour | UserTour;
+// Re-export types
+export type { Place, Event, TemplateTour, TourDay, UserTour };
 
 const inMemoryDB = {
   attractions: [] as Place[],
@@ -96,30 +14,30 @@ const inMemoryDB = {
   favorites: new Map<string, Set<string>>(),
 };
 
+// Initialize with seed data
+inMemoryDB.attractions = [...attractions];
+inMemoryDB.cafes = [...cafes];
+inMemoryDB.events = [...events];
+inMemoryDB.templateTours = [...templateTours];
+
 export const db = {
   attractions: {
     getAll: () => inMemoryDB.attractions,
     getById: (id: string) => inMemoryDB.attractions.find(p => p.id === id),
     getByWard: (ward: string) => inMemoryDB.attractions.filter(p => p.ward === ward),
-    seed: (data: Place[]) => { 
-      inMemoryDB.attractions = data;
-    },
   },
   cafes: {
     getAll: () => inMemoryDB.cafes,
     getById: (id: string) => inMemoryDB.cafes.find(p => p.id === id),
     getByWard: (ward: string) => inMemoryDB.cafes.filter(p => p.ward === ward),
-    seed: (data: Place[]) => { inMemoryDB.cafes = data; },
   },
   events: {
     getAll: () => inMemoryDB.events,
     getById: (id: string) => inMemoryDB.events.find(e => e.id === id),
-    seed: (data: Event[]) => { inMemoryDB.events = data; },
   },
   templateTours: {
     getAll: () => inMemoryDB.templateTours,
     getById: (id: string) => inMemoryDB.templateTours.find(t => t.id === id),
-    seed: (data: TemplateTour[]) => { inMemoryDB.templateTours = data; },
   },
   userTours: {
     getByUserId: (userId: string) => inMemoryDB.userTours.filter(t => t.userId === userId),
@@ -157,3 +75,6 @@ export const db = {
     },
   },
 };
+
+// Export types
+export type { Place, Event, TemplateTour, TourDay, UserTour };
