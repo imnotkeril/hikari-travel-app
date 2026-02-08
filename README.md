@@ -36,6 +36,16 @@ A modern travel guide application for Tokyo, built with React Native and Expo. D
 - Save favorite places for quick access
 - Manage your saved locations
 
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/683774cc-b775-4f1a-a469-0c99b6b4c31e" width="180">
+  <img src="https://github.com/user-attachments/assets/1658d0fd-35e3-4f7e-8e06-0243e88eb1b4" width="180">
+  <img src="https://github.com/user-attachments/assets/cf4fef87-3834-47bb-923d-5c1982913646" width="180">
+  <img src="https://github.com/user-attachments/assets/5a147e1b-5d9c-4dde-ba3d-5d4184af57cf" width="180">
+  <img src="https://github.com/user-attachments/assets/6a6c5a5c-8591-4250-9bc9-35a60bbf4ef1" width="180">
+</p>
+
+
 ## Tech Stack
 
 - **Frontend**: React Native, Expo Router, TypeScript
